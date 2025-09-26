@@ -23,9 +23,7 @@
           tabindex="0"
           />
         <div id="splash-screen-text">
-          <p>The Sun's</p>
-          <p>Seasonal</p>
-          <p>Journey</p>
+          <p>The Sun's Seasonal Journey</p>
         </div>
       </div>
 
@@ -156,7 +154,7 @@ function closeSplashScreen() {
   backdrop-filter: blur(5px);
   justify-content: space-around;
   align-content: center;
-  padding-top: 2rem;
+  padding-top: 1rem;
   padding-bottom: 1rem;
 
   border-radius: 30px;
@@ -223,6 +221,12 @@ function closeSplashScreen() {
     display: flex;
     flex-direction: column;
     line-height: 130%;
+
+    p {
+      width: 80%;
+      text-align: center;
+      margin: auto;
+    }
     
   }
 
@@ -246,7 +250,7 @@ function closeSplashScreen() {
     }
     
     .splash-location-search {
-      width: 100%;
+      width: 75%;
       max-width: 400px;
       margin: 0 auto;
 
@@ -306,7 +310,7 @@ function closeSplashScreen() {
 
   #splash-screen-acknowledgements {
     // margin-top: 3rem;
-    margin: clamp(0.5rem, 3vh, 3rem) auto;
+    margin-top: clamp(0.5rem, 3vh, 3rem);
     font-size: calc(1.7 * var(--default-font-size));
     line-height: calc(1.5 * var(--default-line-height));
     width: 60%; 
@@ -334,6 +338,15 @@ function closeSplashScreen() {
   }
 }
 
+@media (max-height: 600px) {
+  #splash-screen p.medium {
+    font-size: 14px;
+  }
+  #splash-screen-text p {
+    font-size: 20pt;
+  }
+}
+
 @media (max-height: 500px) {
   #splash-screen {
     // display: flex;
@@ -344,20 +357,19 @@ function closeSplashScreen() {
     // gap: calc(0.5 * var(--default-line-height));
     overflow: hidden;
   
-  #splash-screen-text {
-    line-height: 75%;
+    #splash-screen-text {
+      line-height: 75%;
+    }
+    
+    .splash-get-started {
+      margin-top: 0;
+      margin-bottom: 0;
+    }
+    
+    #splash-screen-acknowledgements {
+      font-size: calc(1.5 * var(--default-font-size));
+    }
   }
-  
-  .splash-get-started {
-    margin-top: 0;
-    margin-bottom: 0;
-  }
-  
-  #splash-screen-acknowledgements {
-    font-size: calc(1.5 * var(--default-font-size));
-  }
-}
-  
 }
 
 @media (max-height: 310px) {
