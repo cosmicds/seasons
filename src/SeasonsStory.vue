@@ -352,6 +352,8 @@
 import { ref, reactive, computed, markRaw, onMounted, nextTick, watch } from "vue";
 import { useDisplay } from "vuetify";
 import { storeToRefs } from "pinia";
+import { getTimezoneOffset } from "date-fns-tz";
+import tzlookup from "tz-lookup";
 
 import { AstroTime, Seasons } from "astronomy-engine";
 
@@ -531,10 +533,9 @@ function dayString(date: Date) {
   });
 }
 
-function goToEvent(event: EventOfInterest) {
+function getStartAndEndTimes(event: EventOfInterest): [Date, Date] {
   const day = datesOfInterest[event].date;
   const time = day.getTime();
-
   const { rising: dayStart, setting: dayEnd } = getTimeforSunAlt(0, time);
 
   let start: Date;
@@ -548,6 +549,31 @@ function goToEvent(event: EventOfInterest) {
     start = new Date(dayStart);
     end = new Date(dayEnd);
   }
+
+  return [start, end];
+}
+
+function updateSliderBounds(_newLocation: LocationDeg, oldLocation: LocationDeg) {
+  if (selectedEvent.value === null) {
+    return;
+  }
+  const [start, end] = getStartAndEndTimes(selectedEvent.value);
+  startTime.value = start.getTime();
+  endTime.value = end.getTime();
+
+  const oldOffset = getTimezoneOffset(tzlookup(oldLocation.latitudeDeg, oldLocation.longitudeDeg));
+
+  const diff = oldOffset - selectedTimezoneOffset.value;
+  let newSelectedTime = selectedTime.value + diff;
+  newSelectedTime = Math.min(Math.max(startTime.value, newSelectedTime), endTime.value);
+  selectedTime.value = newSelectedTime;
+}
+
+function goToEvent(event: EventOfInterest) {
+  const day = datesOfInterest[event].date;
+  const time = day.getTime();
+
+  const [start, end] = getStartAndEndTimes(event);
 
   store.setTime(new Date(time));
   const timeStart = start.getTime();
@@ -849,9 +875,10 @@ function doWWTModifications() {
   Planets.drawPlanets = drawPlanets;
 }
 
-watch(selectedLocation, (location: LocationDeg) => {
+watch(selectedLocation, (location: LocationDeg, oldLocation: LocationDeg) => {
   updateSelectedLocationText();
   updateWWTLocation(location);
+  updateSliderBounds(location, oldLocation);
   WWTControl.singleton.renderOneFrame();
 });
 

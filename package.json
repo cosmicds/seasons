@@ -19,6 +19,7 @@
     "webpack-plugin-vuetify": "^2.0.0"
   },
   "devDependencies": {
+    "@types/tz-lookup": "^6.1.2",
     "@typescript-eslint/eslint-plugin": "^6.19.0",
     "@typescript-eslint/parser": "^6.19.0",
     "@typescript-eslint/typescript-estree": "^6.19.0",
