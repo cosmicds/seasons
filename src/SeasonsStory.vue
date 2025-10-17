@@ -37,25 +37,49 @@
     <div id="top-content">
       <div id="left-buttons">
         <div class="location-display">
+          <div
+            id="location-title"
+            class="event-title"
+          >
+
+            <button 
+              @click="showLocationSelector = !showLocationSelector"
+              class="icon-location-button"
+            >
+              <font-awesome-layers>
+                <font-awesome-icon
+                  icon="location-dot"
+                  color="black"
+                />
+                <font-awesome-icon
+                  icon="location-dot"
+                  :color="accentColor"
+                  transform="shrink-3"
+                />
+              </font-awesome-layers>
+            </button>
+
+            <!-- <icon-button
+              v-model="showLocationSelector"
+              fa-icon="location-dot"
+              fa-size="sm"
+              :color="accentColor"
+              tooltip-text="Select Location"
+              tooltip-location="start"
+            ></icon-button> -->
+            <h4>View from</h4>
+          </div>
           <!-- eslint-disable-next-line vue/no-v-text-v-html-on-component -->
           <button
             id="location-button"
             class="event-button selected"
             @click="showLocationSelector = true"
           > 
-          <h4 class="mb-1">View from:</h4>
           <div>{{ selectedLocationInfo.name }}</div>
           <div>Lat: {{ selectedLocationInfo.latitude }}</div>
           <div>Long: {{ selectedLocationInfo.longitude }}</div>
           </button>
         </div>
-        <icon-button
-          v-model="showLocationSelector"
-          fa-icon="location-dot"
-          :color="accentColor"
-          tooltip-text="Select Location"
-          tooltip-location="start"
-        ></icon-button>
         <v-dialog
           v-model="showLocationSelector"
           max-width="fit-content"
@@ -105,11 +129,9 @@
           :color="accentColor"
           :tooltip-text="showTextSheet ? 'Hide Info' : 'Learn More'"
           tooltip-location="start"
+          fa-size="sm"
         >
         </icon-button>
-      </div>
-      <div id="center-buttons">
-
       </div>
       <div id="right-buttons">
         <div
@@ -117,17 +139,19 @@
         >
           <h4>Displayed Date</h4>
         </div>
-        <button
-          :class="[event === selectedEvent ? 'selected' : '']"
-          v-for="([event, value], index) in sortedDatesOfInterest"
-          v-ripple
-          class="event-button"
-          :key="index"
-          @click="selectedEvent = event;"
-        >
-          <div>{{ dayString(value.date) }}</div>
-          <div>{{ eventName(event) }}</div>
-        </button>
+        <div class="date-buttons">
+          <button
+            :class="[event === selectedEvent ? 'selected' : '']"
+            v-for="([event, value], index) in sortedDatesOfInterest"
+            v-ripple
+            class="event-button"
+            :key="index"
+            @click="selectedEvent = event;"
+          >
+            <div>{{ dayString(value.date) }}</div>
+            <div>{{ eventName(event) }}</div>
+          </button>
+        </div>
       </div>
     </div>
     
@@ -135,20 +159,52 @@
 
     <div id="bottom-content">
 
-      <v-slider
-        v-model="sliderValue"
-        :color="accentColor"
-        :min="sliderMin"
-        :max="sliderMax"
-        thumb-label="always"
-        class="time-slider"
-      >
-        <template v-slot:thumb-label>
-          <div class="thumb-label">
-            {{ selectedLocaledTimeDateString }}
-          </div>
-        </template>
-      </v-slider>
+      <div id="time-slider-chips">
+        <v-slider
+          v-model="sliderValue"
+          :color="accentColor"
+          :min="sliderMin"
+          :max="sliderMax"
+          thumb-label="always"
+          class="time-slider"
+        >
+          <template v-slot:thumb-label>
+            <div class="thumb-label">
+              {{ selectedLocaledTimeDateString }}
+            </div>
+          </template>
+        </v-slider>
+
+        <div class="time-chips">
+          <v-chip
+            @click="sliderValue = sliderMin"
+            :color="accentColor"
+            variant="elevated"
+            size="x-small"
+            class="time-chip"
+          >
+            Sunrise
+          </v-chip>
+          <v-chip
+            @click="sliderValue = (sliderMin + sliderMax) / 2"
+            :color="accentColor"
+            variant="elevated"
+            size="x-small"
+            class="time-chip"
+          >
+            Midday
+          </v-chip>
+          <v-chip
+            @click="sliderValue = sliderMax"
+            :color="accentColor"
+            variant="elevated"
+            size="x-small"
+            class="time-chip"
+          >
+            Sunset
+          </v-chip>
+        </div>
+      </div>
       
       <!-- eslint-disable-next-line vue/no-v-model-argument -->
       <speed-control
@@ -268,8 +324,8 @@
           id="tabs"
           dense
         >
-          <v-tab class="info-tabs" tabindex="0"><h3>Information</h3></v-tab>
-          <v-tab class="info-tabs" tabindex="0"><h3>Using WWT</h3></v-tab>
+          <v-tab class="info-tabs" tabindex="0"><h3>How to Use this App</h3></v-tab>
+          <v-tab class="info-tabs" tabindex="0"><h3>What to Explore</h3></v-tab>
         </v-tabs>
         <font-awesome-icon
           id="close-text-icon"
@@ -284,17 +340,96 @@
           <v-window-item>
             <v-card class="no-bottom-border-radius scrollable">
               <v-card-text class="info-text no-bottom-border-radius">
-                Information goes here
-                <v-spacer class="end-spacer"></v-spacer>
-              </v-card-text>
-            </v-card>
-         </v-window-item>
-          <v-window-item>
-            <v-card class="no-bottom-border-radius scrollable">
-              <v-card-text class="info-text no-bottom-border-radius">
                 <v-container>
-                  <v-row align="center">
-                  <v-col cols="4">
+                  <p>
+                    This interactive lets you view the path of the Sun in the sky on the solstices and equinoxes from any location on Earth! 
+                  </p>
+                  <ul class="ml-5 pt-3">
+                    <li class="pb-3">
+                      Click 
+                      <font-awesome-icon
+                        icon="location-dot"
+                        :color="accentColor"
+                      /> 
+                      in the upper left to choose a different location.
+                    </li>
+                    <li class="pb-3">
+                      Click the buttons in the upper right to choose a different date.
+                    </li>
+                    <li>
+                      Use the time slider at the bottom to see how the Sun moves through the sky on your chosen date from your chosen location.
+                    </li>
+                    <div class="py-1 pl-3">
+                      or
+                    </div>
+                    <li>
+                      Press 
+                      <font-awesome-icon
+                        icon="play"
+                        :color="accentColor"
+                      />/
+                      <font-awesome-icon
+                        icon="pause"
+                        :color="accentColor"
+                      />
+                      to start/stop time.
+                    </li>
+                    <li>
+                      <font-awesome-icon
+                        icon="angles-up"
+                        :color="accentColor"
+                      />
+                      and
+                      <font-awesome-icon
+                        icon="angles-down"
+                        :color="accentColor"
+                      /> to speed up and slow down time.
+                    </li>
+                    <li>
+                      <v-icon :color="accentColor">mdi-step-backward-2</v-icon>/<v-icon :color="accentColor">mdi-step-forward-2</v-icon> to play time in reverse/forwards.
+                    </li>
+                    <li>
+                      <font-awesome-icon
+                        icon="rotate"
+                        :color="accentColor"
+                      /> to reset the time and view to sunrise for the day.
+                    </li>
+                    <div class="py-1 pl-3">
+                      or
+                    </div>
+                    <li>
+                      Jump directly to 
+                      <v-chip
+                        :color="accentColor"
+                        variant="elevated"
+                        size="small"
+                        class="time-chip"
+                      >
+                        Sunrise
+                      </v-chip>,
+                      <v-chip
+                        :color="accentColor"
+                        variant="elevated"
+                        size="small"
+                        class="time-chip"
+                      >
+                        Midday
+                      </v-chip>, or
+                      <v-chip
+                        :color="accentColor"
+                        variant="elevated"
+                        size="small"
+                        class="time-chip"
+                      >
+                        Sunrise
+                      </v-chip> using the buttons under the time slider.
+                    </li>
+                    <li class="py-3">
+                      Move around the sky:
+                    </li>
+                  </ul>  
+                  <v-row align="center" class="pb-5">
+                    <v-col cols="4">
                       <v-chip
                         label
                         outlined
@@ -319,26 +454,97 @@
                       <strong>{{ touchscreen ? "pinch in and out" : "scroll in and out" }}</strong> {{ touchscreen ? ":" : "or" }} <strong>{{ touchscreen ? ":" : "I-O" }}</strong> {{ touchscreen ? ":" : "keys" }}<br>
                     </v-col>
                   </v-row>
-                  <v-row>
+                  <v-spacer class="end-spacer"></v-spacer>
+                </v-container>              
+              </v-card-text>
+            </v-card>
+          </v-window-item>
+          <v-window-item>
+            <v-card class="no-bottom-border-radius scrollable">
+              <v-card-text class="info-text no-bottom-border-radius">
+                <v-container>
+                  <h3 class="pb-1">
+                    The Reason for Seasons
+                  </h3>
+                  <p>
+                    Earth's axis has a 23.5 degree tilt, which causes the seasons we experience.
+                  </p>
+                  <p>
+                    The key factors are how high in the sky the Sun gets, and how long it stays in the sky on a particular day. The higher the Sun and the longer it is in the sky, the more energy we receive.
+                  </p>
+                  <p>
+                    You can explore how the Sun moves in the sky on different dates for a single location, or for multiple locations. 
+                  </p>
+                  <h4 class="pt-2">Explore a single location</h4>
+                  <p>
+                    For a single location, here are some questions you might try to answer:
+                  </p>
+                  <ul class="ml-5 pb-1 explore-list">
+                    <li>
+                      What is the angle of the Sun in the sky when it reaches its peak height on each of the four equinox and solstice dates?
+                    </li>
+                    <li>
+                      On which of those dates is the Sun's peak height the highest?
+                    </li>
+                    <li>
+                      On which of those dates is the Sun's peak height the lowest?
+                    </li>
+                    <li>
+                      How many hours is the Sun in the sky on each of the four equinox and solstice dates?
+                    </li>
+                    <li>
+                      On which of those dates is the Sun in the sky for the most amount of time?
+                    </li>
+                    <li>
+                      On which of those dates is the Sun in the sky for the least amount of time?
+                    </li>
+                    <li>
+                      Why do you think the equinoxes are called equinoxes?
+                    </li>
+                    <li>
+                      What are the differences in the peak heights for those four dates, and how does it relate to the tilt of the Earth's axis?
+                    </li>
+                    <li>
+                      What is notable about where the Sun rises and sets on the equinoxes?
+                    </li>
+                  </ul>
+                  <h4 class="pt-2">Explore multiple locations</h4>
+                  <p>
+                    Use the location selector to try answering some of these questions:
+                  </p>
+                  <ul class="ml-5 pb-1 explore-list">
+                    <li>
+                      What seasons would be experienced by someone at your latitude, but roughly on the opposite side of the equator? (For example, Cambridge, MA has a latitude 42° NORTH of the equator. How would the seasons compare at a latitude that is 42° SOUTH of the equator?)
+                    </li>
+                    <li>
+                      At what latitude ranges will the Sun never rise or never set on the solstices?
+                    </li>
+                    <li>
+                      What latitude ranges will never experience the Sun being directly overhead (at a sky angle of 90°) on any date?
+                    </li>
+                    <li>
+                      What latitude ranges will experience equal day and night every single day?
+                    </li>
+
+                  </ul>
+                  <v-row class="mt-5">
                     <v-col cols="12">
                       <div class="credits">
-                      <h3>Credits:</h3>
-                      <h4><a href="https://www.cosmicds.cfa.harvard.edu/" target="_blank" rel="noopener noreferrer">CosmicDS</a> Vue Data Stories Team:</h4>
-                      John Lewis<br>
-                      Jon Carifio<br>
-                      Pat Udomprasert<br>
-                      Alyssa Goodman<br>
-                      Mary Dussault<br>
-                      Harry Houghton<br>
-                      Anna Nolin<br>
-                      Evaluator: Sue Sunbury<br>
-                      <br>
-                      <h4>WorldWide Telescope Team:</h4>
-                      Peter Williams<br>
-                      A. David Weigel<br>
-                      Jon Carifio<br>
+                        <h3>Credits:</h3>
+                        <h4><a href="https://www.cosmicds.cfa.harvard.edu/" target="_blank" rel="noopener noreferrer">CosmicDS</a> Vue Data Stories Team:</h4>
+                        Pat Udomprasert<br>
+                        Jon Carifio<br>
+                        Harry Houghton<br>
+                        John Lewis<br>
+                        Alyssa Goodman<br>
+                        Mary Dussault<br>
+                        Harry Houghton<br>
+                        Evaluator: Sue Sunbury<br>
+                        <h4 class="pt-4">WorldWide Telescope Team:</h4>
+                        Peter Williams<br>
+                        A. David Weigel<br>
+                        Jon Carifio<br>
                       </div>
-                      <v-spacer class="end-spacer"></v-spacer>
                     </v-col>
                   </v-row>
                   <v-row>
@@ -346,7 +552,8 @@
                       <funding-acknowledgement/>
                     </v-col>
                   </v-row>
-                </v-container>              
+                  <v-spacer class="end-spacer"></v-spacer>
+                </v-container>
               </v-card-text>
             </v-card>
           </v-window-item>
@@ -538,7 +745,7 @@ const accentColor = computed(() => {
 function dayString(date: Date) {
   return date.toLocaleString("en-US", {
     year: "numeric",
-    month: "long",
+    month: smallSize.value ? "short" : "long",
     day: "numeric",
   });
 }
@@ -574,9 +781,12 @@ function updateSliderBounds(_newLocation: LocationDeg, oldLocation: LocationDeg)
   const oldOffset = getTimezoneOffset(tzlookup(oldLocation.latitudeDeg, oldLocation.longitudeDeg));
 
   const diff = oldOffset - selectedTimezoneOffset.value;
-  let newSelectedTime = selectedTime.value + diff;
+  let newSelectedTime = currentTime.value.getTime() + diff;
   newSelectedTime = Math.min(Math.max(startTime.value, newSelectedTime), endTime.value);
   selectedTime.value = newSelectedTime;
+  
+  // Update time in WWT to reflect the new location's timing
+  store.setTime(new Date(newSelectedTime));
 }
 
 function goToEvent(event: EventOfInterest) {
@@ -1068,21 +1278,14 @@ body {
 #right-buttons {
   display: flex;
   flex-direction: column;
-  gap: 10px;
   align-items: flex-end;
   height: auto;
-}
 
-#bottom-content {
-  display: flex;
-  flex-direction: column;
-  position: absolute;
-  bottom: 1rem;
-  right: 1rem;
-  width: calc(100% - 2rem);
-  pointer-events: none;
-  align-items: center;
-  gap: 5px;
+  .date-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;    
+  }
 }
 
 #splash-overlay {
@@ -1200,9 +1403,9 @@ video {
 .bottom-sheet {
   .v-overlay__content {
     align-self: flex-end;
-    padding: 0;
-    margin: 0;
-    max-width: 100%;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
     height: 34%;
   }
 
@@ -1245,9 +1448,40 @@ video {
   
     .v-card-text {
       font-size: ~"max(14px, calc(0.7em + 0.3vw))";
-      padding-top: ~"max(2vw, 16px)";
+      line-height: 1.6;
+      padding-top: 0;
       padding-left: ~"max(4vw, 16px)";
       padding-right: ~"max(4vw, 16px)";
+
+      h3 {
+        padding-top: 5px;
+      }
+
+      h4 {
+        padding-top: 5px;
+        padding-bottom: 4px;
+      }
+
+      p {
+        padding-block: 3px;
+      }
+
+      @media (max-width: 699px) {
+        h3 {
+          font-size: calc(1.3 * var(--default-font-size));
+        }
+
+        h4 {
+          font-size: calc(1.1 * var(--default-font-size));
+        }
+      }
+
+      .explore-list {
+        li {
+          padding-block: 2px;
+        }
+      }
+      
   
       .end-spacer {
         height: 25px;
@@ -1274,11 +1508,24 @@ video {
   pointer-events: auto;
 }
 
+#location-title {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.icon-location-button {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
 .event-button {
+  font-size: calc(0.9 * var(--default-font-size));
   background: black;
   border: 1px solid white;
   border-radius: 5px;
-  padding: 10px;
+  padding: 0.5rem;
   width: 100%;
   pointer-events: auto;
 
@@ -1289,6 +1536,8 @@ video {
 }
 
 .event-title {
+  font-size: var(--default-font-size);
+  padding-bottom: 5px;
   display: flex;
   align-content: center;
   color: var(--accent-color);
@@ -1307,8 +1556,58 @@ video {
   }
 }
 
-.v-slider {
+#bottom-content {
   width: 80%;
+  display: flex;
+  flex-direction: row;
+  position: absolute;
+  bottom: 3rem;
+  left: 50%;
+  transform: translateX(-50%);
+  // width: calc(100% - 2rem);
+  pointer-events: none;
+  align-items: center;
+  gap: 30px;
+
+  @media (max-width: 959px) {
+    width: 95%;
+    gap: 5px;
+    bottom: 1rem;
+  }
+
+  #speed-control-icon-button {
+    display: none;
+  }
+
+  @media (max-width: 699px) {
+    #reset-button {
+      display: none;
+    }
+  }  
+
+}
+
+#time-slider-chips {
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  padding-left: 3rem;
+  padding-right: 2rem;
+
+  .v-input__details {
+    height: 0;
+    min-height: 0;
+    padding-top: 0;
+  }
+  
+  @media (max-width: 699px) {
+    padding-left: 1.5rem;
+    padding-right: 1rem;
+    min-width: 50%;
+  }
+}
+
+.v-slider {
   pointer-events: auto;
 }
 
@@ -1322,13 +1621,47 @@ video {
       border: 2px solid var(--accent-color);
       border-radius: 5px;
       width: max-content;
-      height: calc(2.5 * var(--default-font-size));
-      font-size: var(--default-font-size);
+      padding: 10px;
+      font-size: calc(0.8 * var(--default-font-size));
 
       &::before {
         color: var(--accent-color);
       }
+
+      @media (max-width: 699px) {
+        padding-inline: 5px;
+      }
     }
+  }
+  @media (max-width: 699px) {
+    padding-left: 5px;
+  }
+
+}
+
+.time-chips {
+  display: flex;
+  justify-content: space-between;
+  pointer-events: auto;
+
+  .time-chip {
+    cursor: pointer;
+    font-size: calc(0.8 * var(--default-font-size));
+
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+
+  @media (max-width: 699px) {
+    font-size: calc(0.7 * var(--default-font-size));
+    padding-inline: 1px;
+  }
+}
+
+#bottom-content #speed-buttons {
+  @media (max-width: 699px) {
+    gap: 6px !important;
   }
 }
 
@@ -1378,7 +1711,7 @@ video {
   pointer-events: auto;
   height: fit-content;
   text-align: left;
-  padding-inline: 1rem;
+  padding-inline: 0.5rem;
 }
 
 #body-logos {
@@ -1389,5 +1722,17 @@ video {
   img {
     height: 36px;
   }
+}
+
+.info-tabs {
+  @media (max-width: 699px) {
+    .v-btn {
+      padding-inline: 0px;
+    }
+
+    h3 {
+      font-size: var(--default-font-size);
+    }
+  }  
 }
 </style>

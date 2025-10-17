@@ -19,7 +19,7 @@ import TimeDisplay from "./components/TimeDisplay.vue";
 import vuetify from "../plugins/vuetify";
 import { VIcon } from "vuetify/components/VIcon";
 
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
 
 import { WWTComponent, wwtPinia } from "@wwtelescope/engine-pinia";
 
@@ -77,6 +77,7 @@ createApp(SeasonsStory, {
   .component("WorldWideTelescope", WWTComponent)
   .component("splash-screen", SplashScreen)
   .component('font-awesome-icon', FontAwesomeIcon)
+  .component('font-awesome-layers', FontAwesomeLayers)
   .component('icon-button', IconButton)
   .component('funding-acknowledgement', FundingAcknowledgement)
   .component('credit-logos', CreditLogos)
