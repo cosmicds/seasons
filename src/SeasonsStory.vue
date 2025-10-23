@@ -132,6 +132,16 @@
           fa-size="sm"
         >
         </icon-button>
+        <div
+          class="options"
+        >
+          <v-checkbox
+            v-model="forceCamera"
+            label="Follow Sun"
+            density="compact"
+            hide-details
+          />
+        </div>
       </div>
       <div id="right-buttons">
         <div
@@ -623,6 +633,7 @@ const backgroundImagesets = reactive<BackgroundImageset[]>([]);
 const sheet = ref<SheetType | null>(null);
 const layersLoaded = ref(false);
 const positionSet = ref(false);
+const forceCamera = ref(true);
 
 const tab = ref(0);
 
@@ -1121,7 +1132,15 @@ watch(selectedLocation, (location: LocationDeg, oldLocation: LocationDeg) => {
 });
 
 watch(currentTime, (_time: Date) => {
-  resetView(store.zoomDeg);
+  if (forceCamera.value) {
+    resetView(store.zoomDeg);
+  }
+});
+
+watch(forceCamera, (value: boolean) => {
+  if (value) {
+    resetView();
+  }
 });
 
 watch(selectedEvent, (event: EventOfInterest | null) => {
@@ -1456,19 +1475,28 @@ video {
   pointer-events: auto;
 }
 
-.event-button {
+.event-button, .options {
   font-size: 0.9rem;
   background: black;
-  border: 1px solid white;
+  border: 1px solid;
   border-radius: 5px;
   padding: 0.5rem;
-  width: 100%;
   pointer-events: auto;
+}
+
+.event-button {
+  border-color: white;
+  width: 100%;
 
   &.selected {
     color: var(--accent-color);
     border-color: var(--accent-color);
   }
+}
+
+.options {
+  color: var(--accent-color);
+  border-color: var(--accent-color);
 }
 
 .event-title {
