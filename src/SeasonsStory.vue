@@ -591,6 +591,7 @@ import {
   blurActiveElement,
   useWWTKeyboardControls,
   D2R,
+  R2D,
 } from "@cosmicds/vue-toolkit";
 import { MapBoxFeature, MapBoxFeatureCollection, geocodingInfoForSearch, textForLocation } from "@cosmicds/vue-toolkit/src/mapbox";
 
@@ -638,6 +639,10 @@ const showLocationSelector = ref(false);
 
 const showHorizon = ref(true);
 
+const startAzOffset = 40 * D2R;
+const endAzOffset = -startAzOffset;
+let azOffsetSlope = 0;
+
 // Get the next 4 "dates of interest"
 // i.e. equinoxes and solstices
 const currentDate = new Date();
@@ -674,6 +679,23 @@ const sliderValue = computed({
     const time = fraction * (endTime.value - startTime.value) + startTime.value;
     store.setTime(new Date(time));
   }
+});
+
+const middayTime = computed(() => 0.5 * (startTime.value + endTime.value));
+const middayAltAz = computed(() => getSunPositionAtTime(new Date(middayTime.value)));
+const highAltDeg = 70;
+const highAltTimes = computed(() => {
+  const { rising: start, setting: end} = getTimeforSunAlt(highAltDeg, middayTime.value);
+  return { start, end }; 
+});
+const highAltCoordinates = computed(() => {
+  if (!(highAltTimes.value.start && highAltTimes.value.end)) {
+    return { start: null, end : null };
+  }
+  return {
+    start: getSunPositionAtTime(new Date(highAltTimes.value.start)),
+    end: getSunPositionAtTime(new Date(highAltTimes.value.end)),
+  };
 });
 
 const sortedDatesOfInterest = computed(() => {
@@ -774,6 +796,7 @@ function getStartAndEndTimes(event: EventOfInterest): [Date, Date] {
     end = new Date(dayEnd);
   }
 
+
   return [start, end];
 }
 
@@ -786,6 +809,7 @@ function updateSliderBounds(_newLocation: LocationDeg, oldLocation: LocationDeg)
   endTime.value = end.getTime();
 
   const oldOffset = getTimezoneOffset(tzlookup(oldLocation.latitudeDeg, oldLocation.longitudeDeg));
+  azOffsetSlope = (endAzOffset - startAzOffset) / (endTime.value - startTime.value);
 
   const diff = oldOffset - selectedTimezoneOffset.value;
   let newSelectedTime = currentTime.value.getTime() + diff;
@@ -812,6 +836,7 @@ function goToEvent(event: EventOfInterest) {
   const time = day.getTime();
 
   const [start, end] = getStartAndEndTimes(event);
+  azOffsetSlope = (endAzOffset - startAzOffset) / (end.getTime() - start.getTime());
 
   store.setTime(new Date(time));
   const timeStart = start.getTime();
@@ -1052,26 +1077,56 @@ function selectSheet(sheetType: SheetType | null) {
   }
 }
 
-function resetView(zoomDeg?: number) {
+function resetView(zoomDeg?: number, withAzOffset=true) {
   const time = store.currentTime;
+  const t = time.getTime();
 
   const latRad = selectedLocation.value.latitudeDeg * D2R;
   const lonRad = selectedLocation.value.longitudeDeg * D2R;
 
   const sunAltAz = getSunPositionAtTime(time);
-  const sunAz = sunAltAz.azRad;
-  const startAlt = (smallSize.value ? 33 : 33) * D2R;
-  const startRADec = horizontalToEquatorial(
-    startAlt,
-    sunAz,
+  let az = sunAltAz.azRad;
+  let altDeg = 33;
+
+  const middayAltDeg = middayAltAz.value.altRad * R2D;
+  if (middayAltDeg > highAltDeg) {
+
+    // Altitude modifications
+    const dayFrac  = (time.getTime() - startTime.value) / (endTime.value - startTime.value);
+    const dayAzFactor = -2 * Math.abs(0.5 - dayFrac) + 1;
+    altDeg = middayAltDeg * dayAzFactor;
+    altDeg = Math.max(90 - Math.abs(altDeg - 90), 33);
+
+    // Azimuth modifications
+    const { start: highStartTime, end: highEndTime } = highAltTimes.value;
+    const { start, end } = highAltCoordinates.value;
+    if (highStartTime && highEndTime && start && end && t > highStartTime && t < highEndTime) {
+      const topStartAz = start.azRad;
+      const topEndAz = end.azRad;
+      const tTop = (t - highStartTime) / (highEndTime - highStartTime);
+      az = tTop * (topEndAz - topStartAz) + topStartAz;
+    }
+  }
+  const alt = altDeg * D2R;
+
+  if (t > 0 && withAzOffset) {
+    const offset = (azOffsetSlope * (t - startTime.value) + startAzOffset);
+    const middayAzDeg = middayAltAz.value.azRad * R2D;
+    const peakNorth = Math.min(Math.abs(middayAzDeg), Math.abs(middayAzDeg - 360)) < Math.abs(middayAzDeg - 180);
+    const sgn = peakNorth ? -1 : 1;
+    az += (offset * sgn);
+  }
+  const raDec = horizontalToEquatorial(
+    alt,
+    az,
     latRad,
     lonRad,
     time,
   );
 
-  return store.gotoRADecZoom({
-    raRad: startRADec.raRad,
-    decRad: startRADec.decRad,
+  store.gotoRADecZoom({
+    raRad: raDec.raRad,
+    decRad: raDec.decRad,
     zoomDeg: zoomDeg ?? MAX_ZOOM,
     instant: true,
   });
@@ -1135,6 +1190,7 @@ watch(selectedLocation, (location: LocationDeg, oldLocation: LocationDeg) => {
   updateSelectedLocationInfo();
   updateWWTLocation(location);
   updateSliderBounds(location, oldLocation);
+  resetView();
   WWTControl.singleton.renderOneFrame();
 });
 
