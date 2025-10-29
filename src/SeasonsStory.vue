@@ -123,6 +123,16 @@
             />
           </v-card>
         </v-dialog>
+        <div
+          class="options"
+        >
+          <v-checkbox
+            v-model="forceCamera"
+            label="Auto-track Sun"
+            density="compact"
+            hide-details
+          />
+        </div>
         <icon-button
           v-model="showTextSheet"
           fa-icon="info"
@@ -132,35 +142,69 @@
           fa-size="sm"
         >
         </icon-button>
-        <div
-          class="options"
-        >
-          <v-checkbox
-            v-model="forceCamera"
-            label="Follow Sun"
-            density="compact"
-            hide-details
-          />
-        </div>
       </div>
       <div id="right-buttons">
         <div
+          id="date-title"
           class="event-title"
         >
           <h4>Displayed Date</h4>
+          <div>
+            <div>{{ dayString(displayedDate) }}</div>
+          </div>
         </div>
         <div class="date-buttons">
           <button
             :class="[event === selectedEvent ? 'selected' : '']"
-            v-for="([event, value], index) in sortedDatesOfInterest"
+            v-for="([event], index) in sortedDatesOfInterest"
             v-ripple
             class="event-button"
             :key="index"
             @click="selectedEvent = event;"
           >
-            <div>{{ dayString(value.date) }}</div>
             <div>{{ eventName(event) }}</div>
           </button>
+          
+          <!-- Calendar date picker -->
+          <div class="date-picker-section date-button">
+            <button
+              @click="showDatePicker = !showDatePicker"
+              :color="accentColor"
+              variant="outlined"
+              size="small"
+              class="calendar-button event-button"
+            >
+              <v-icon left>mdi-calendar</v-icon>
+              Choose Any Date
+            </button>
+            
+            <v-dialog
+              v-model="showDatePicker"
+              max-width="fit-content"
+            >
+              <v-card>
+                <v-card-title class="text-h6 mb-0 mt-2">
+                  Select Date
+                </v-card-title>
+                <v-card-text class="my-0 mx=2 pa-0">
+                  <v-date-picker
+                    v-model="selectedCustomDate"
+                    @update:model-value="handleDateSelection"
+                    :color="accentColor"
+                    hide-header
+                  />
+                </v-card-text>
+                <v-card-actions class="my-0">
+                  <v-btn
+                    text
+                    @click="showDatePicker = false"
+                  >
+                    Cancel
+                  </v-btn>
+                </v-card-actions>
+              </v-card>
+            </v-dialog>
+          </div>
         </div>
         <!-- <div>
           <p>Current Time: {{ currentTime  }}</p>
@@ -711,29 +755,62 @@ const highAltCoordinates = computed(() => {
 
 const sortedDatesOfInterest = computed(() => {
   const entries: ([EventOfInterest, AstroTime])[] = Object.entries(datesOfInterest) as [EventOfInterest, AstroTime][];
-  return entries.sort((a, b) => a[1].date.getTime() - b[1].date.getTime());
+  const sortedEntries = entries.sort((a, b) => a[1].date.getTime() - b[1].date.getTime());
+  
+  // Add "today" as the first entry
+  const today: [EventOfInterest, AstroTime] = ["today", { date: new Date() } as AstroTime];
+  return [today, ...sortedEntries];
 });
 
 const EVENTS_OF_INTEREST = [
+  "today",
   "mar_equinox",
   "jun_solstice",
   "sep_equinox",
   "dec_solstice",
+  "custom",
 ] as const;
 type EventOfInterest = typeof EVENTS_OF_INTEREST[number];
 
 const selectedEvent = ref<EventOfInterest | null>(null);
+// const selectedDateType = ref<DateSelection | null>(null);
+const selectedCustomDate = ref<Date | null>(null);
+const showDatePicker = ref(false);
+
+const getDateForEvent = (event: EventOfInterest): Date => {
+  if (event === "today") {
+    return new Date();
+  } else if (event === "custom" && selectedCustomDate.value) {
+    return selectedCustomDate.value;
+  } else {
+    return datesOfInterest[event].date;
+  }
+};
+
+
+const handleDateSelection = (date: Date | null) => {
+  if (date) {
+    showDatePicker.value = false;
+    selectedCustomDate.value = date;
+    selectedEvent.value = 'custom';
+  }
+};
 
 function eventName(event: EventOfInterest): string {
+  const isSmall = smallSize.value;
   switch (event) {
+  case "today":
+    return "Today";
   case "mar_equinox":
-    return "Equinox";
+    return isSmall ? "Mar Equinox" : "March Equinox";
   case "jun_solstice":
-    return "Solstice";
+    return isSmall ? "Jun Solstice" : "June Solstice";
   case "sep_equinox":
-    return "Equinox";
+    return isSmall ? "Sep Equinox" : "September Equinox";
   case "dec_solstice":
-    return "Solstice";
+    return isSmall ? "Dec Solstice" : "December Solstice";
+  case "custom":
+    return "Custom";
   }
 }
 
@@ -765,11 +842,49 @@ function getCurrentSeason(event: string, latitude: number): 'spring' | 'summer' 
   return "spring"; // fallback
 }
 
+function getCurrentSeasonForDate(date: Date, latitude: number): 'spring' | 'summer' | 'autumn' | 'winter' {
+  const year = date.getFullYear();
+  const seasonsForYear = Seasons(year);
+  
+  // Get the season dates for the year
+  const marEquinox = seasonsForYear.mar_equinox.date;
+  const junSolstice = seasonsForYear.jun_solstice.date;
+  const sepEquinox = seasonsForYear.sep_equinox.date;
+  const decSolstice = seasonsForYear.dec_solstice.date;
+  
+  // Determine which season the date falls into
+  let season: 'spring' | 'summer' | 'autumn' | 'winter';
+  
+  if (date >= marEquinox && date < junSolstice) {
+    season = 'spring';
+  } else if (date >= junSolstice && date < sepEquinox) {
+    season = 'summer';
+  } else if (date >= sepEquinox && date < decSolstice) {
+    season = 'autumn';
+  } else {
+    // Either before March equinox or after December solstice (winter)
+    season = 'winter';
+  }
+  
+  // Adjust for hemisphere
+  if (latitude < 0) {
+    // Southern hemisphere - seasons are opposite
+    switch (season) {
+    case 'spring': return 'autumn';
+    case 'summer': return 'winter';
+    case 'autumn': return 'spring';
+    case 'winter': return 'summer';
+    }
+  }
+  
+  return season;
+}
+
 const seasonalColors = {
   spring: '#FFA0D7',  
   summer: '#F7EB67',  
   autumn: '#FEB770',  
-  winter: '#91C2F9'   
+  winter: '#c1e2fc'   
 };
 
 const accentColor = computed(() => {
@@ -778,8 +893,32 @@ const accentColor = computed(() => {
     return seasonalColors.spring;
   }
   const latitude = selectedLocation.value.latitudeDeg;
+  // Handle "today" case
+  if (event === 'today') {
+    const today = new Date();
+    const currentSeason = getCurrentSeasonForDate(today, latitude);
+    return seasonalColors[currentSeason];
+  }
+  
+  // Handle custom date case
+  if (event === 'custom' && selectedCustomDate.value) {
+    const customSeason = getCurrentSeasonForDate(selectedCustomDate.value, latitude);
+    return seasonalColors[customSeason];
+  }
+  
   const currentSeason = getCurrentSeason(event, latitude);
   return seasonalColors[currentSeason];
+});
+
+const displayedDate = computed(() => {
+  if (selectedEvent.value === 'today') {
+    return new Date();
+  } else if (selectedEvent.value === 'custom' && selectedCustomDate.value) {
+    return selectedCustomDate.value;
+  } else if (selectedEvent.value) {
+    return datesOfInterest[selectedEvent.value].date;
+  }
+  return new Date(); // fallback
 });
 
 function dayString(date: Date) {
@@ -790,8 +929,7 @@ function dayString(date: Date) {
   });
 }
 
-function getStartAndEndTimes(event: EventOfInterest): [Date, Date] {
-  const day = datesOfInterest[event].date;
+function getStartAndEndTimes(day: Date): [Date, Date] {
   const time = day.getTime();
   const { rising: dayStart, setting: dayEnd } = getTimeforSunAlt(0, time);
 
@@ -815,7 +953,7 @@ function updateSliderBounds(_newLocation: LocationDeg, oldLocation: LocationDeg)
   if (selectedEvent.value === null) {
     return;
   }
-  const [start, end] = getStartAndEndTimes(selectedEvent.value);
+  const [start, end] = getStartAndEndTimes(getDateForEvent(selectedEvent.value));
   startTime.value = start.getTime();
   endTime.value = end.getTime();
 
@@ -843,10 +981,10 @@ function handlePlaying( _playing ) {
 }
 
 function goToEvent(event: EventOfInterest) {
-  const day = datesOfInterest[event].date;
+  const day = getDateForEvent(event);
   const time = day.getTime();
 
-  const [start, end] = getStartAndEndTimes(event);
+  const [start, end] = getStartAndEndTimes(day);
   azOffsetSlope = (endAzOffset - startAzOffset) / (end.getTime() - start.getTime());
 
   store.setTime(new Date(time));
@@ -1015,6 +1153,7 @@ function aspectRatioSetup() {
   });
 
   observer.observe(canvas);
+  updateAzOffsets();
 }
 
 onMounted(() => {
@@ -1383,22 +1522,13 @@ body {
 #left-buttons {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 5px;
   align-items: flex-start;
 }
 
 #left-buttons .icon-wrapper {
   width: 30%;
   flex-shrink: 0;
-}
-
-#center-buttons {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: row;
-  gap: 5px;
 }
 
 #right-buttons {
@@ -1586,7 +1716,7 @@ video {
   pointer-events: auto;
 }
 
-.event-button, .options {
+.event-button {
   font-size: 0.9rem;
   background: black;
   border: 1px solid;
@@ -1607,7 +1737,8 @@ video {
 
 .options {
   color: var(--accent-color);
-  border-color: var(--accent-color);
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+  pointer-events: auto;
 }
 
 .event-title {
@@ -1618,6 +1749,45 @@ video {
   color: var(--accent-color);
   text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
 }
+
+#date-title {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: flex-end;
+
+  .displayed-date-info {
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid var(--accent-color);
+    border-radius: 5px;
+    padding: 0.5rem;
+    text-align: right;
+    pointer-events: auto;
+
+    .date-display {
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+
+    .event-display {
+      font-size: 0.8rem;
+      opacity: 0.9;
+    }
+  }
+}
+
+.date-picker-section {
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: auto;
+  width: 100%;
+
+  .calendar-button {
+    font-size: 0.7rem;
+    text-transform: none;
+  }
+}
+
 
 .map-container {
   @media (max-width: 600px) {
