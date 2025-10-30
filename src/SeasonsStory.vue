@@ -694,9 +694,9 @@ const showLocationSelector = ref(false);
 
 const showHorizon = ref(true);
 
-let startAzOffset = 40 * D2R;
-let endAzOffset = -startAzOffset;
-let azOffsetSlope = 0;
+const startAzOffset = ref(40 * D2R);
+const endAzOffset = ref(-startAzOffset.value);
+const azOffsetSlope = computed(() => (endAzOffset.value - startAzOffset.value) / (endTime.value - startTime.value));
 
 // Get the next 4 "dates of interest"
 // i.e. equinoxes and solstices
@@ -958,7 +958,6 @@ function updateSliderBounds(_newLocation: LocationDeg, oldLocation: LocationDeg)
   endTime.value = end.getTime();
 
   const oldOffset = getTimezoneOffset(tzlookup(oldLocation.latitudeDeg, oldLocation.longitudeDeg));
-  azOffsetSlope = (endAzOffset - startAzOffset) / (endTime.value - startTime.value);
 
   const diff = oldOffset - selectedTimezoneOffset.value;
   let newSelectedTime = currentTime.value.getTime() + diff;
@@ -985,7 +984,6 @@ function goToEvent(event: EventOfInterest) {
   const time = day.getTime();
 
   const [start, end] = getStartAndEndTimes(day);
-  azOffsetSlope = (endAzOffset - startAzOffset) / (end.getTime() - start.getTime());
 
   store.setTime(new Date(time));
   const timeStart = start.getTime();
@@ -1138,8 +1136,8 @@ function aspectRatioSetup() {
 
   function updateAzOffsets() {
     const aspectRatio = canvas.width / canvas.height;
-    startAzOffset = 0.35 * (60 * aspectRatio + 13.5) * D2R;
-    endAzOffset = -startAzOffset;
+    startAzOffset.value = 0.35 * (60 * aspectRatio + 13.5) * D2R;
+    endAzOffset.value = -startAzOffset.value;
   }
 
   const observer = new ResizeObserver((entries) => {
@@ -1294,7 +1292,7 @@ function resetView(zoomDeg?: number, withAzOffset=true) {
   const alt = altDeg * D2R;
 
   if (t > 0 && withAzOffset) {
-    const offset = (azOffsetSlope * (t - startTime.value) + startAzOffset);
+    const offset = (azOffsetSlope.value * (t - startTime.value) + startAzOffset.value);
     const sgn = peakNorth ? -1 : 1;
     az += (offset * sgn);
   }
