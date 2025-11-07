@@ -1730,6 +1730,7 @@ video {
   &.selected {
     color: var(--accent-color);
     border-color: var(--accent-color);
+    box-shadow: none !important;
   }
 }
 
