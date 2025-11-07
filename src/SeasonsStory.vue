@@ -595,6 +595,7 @@
                         <h4><a href="https://www.cosmicds.cfa.harvard.edu/" target="_blank" rel="noopener noreferrer">CosmicDS</a> Vue Data Stories Team:</h4>
                         Pat Udomprasert<br>
                         Jon Carifio<br>
+                        Azmé Tariq<br>
                         Harry Houghton<br>
                         John Lewis<br>
                         Alyssa Goodman<br>
