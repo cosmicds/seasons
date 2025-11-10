@@ -167,8 +167,8 @@
           <h4>Displayed Date</h4>
           </div>
           <button id="date-info" @click="showDatePicker = !showDatePicker" class="event-button">
-            <div>{{ dayString(displayedDate) }}</div>
-            <div>Length of Day: {{ ((endTime - startTime) / 3600000).toFixed(1) }} hr</div>
+            <div>{{ dayString(displayedDate) }}</div>       
+            <div>Length of Day: {{ formatDayLength(endTime - startTime) }}</div>
             <div>Distance to Sun: {{ sunDistance.toFixed(2) }} au</div>
           </button>
         
@@ -953,6 +953,13 @@ function dayString(date: Date) {
     month: smallSize.value ? "short" : "long",
     day: "numeric",
   });
+}
+
+function formatDayLength(milliseconds: number): string {
+  const totalMinutes = Math.round(milliseconds / 60000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${hours}h ${minutes}m`;
 }
 
 function getStartAndEndTimes(day: Date): [Date, Date] {
