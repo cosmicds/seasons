@@ -1009,7 +1009,9 @@ function goToEvent(event: EventOfInterest) {
   const time = day.getTime();
 
   const [start, end] = getStartAndEndTimes(day);
-
+  if (event !== 'custom') {
+    selectedCustomDate.value = day;
+  }
   store.setTime(new Date(time));
   const timeStart = start.getTime();
   store.setTime(new Date(timeStart));
@@ -1424,7 +1426,7 @@ watch(selectedEvent, (event: EventOfInterest | null) => {
 });
 
 watch(selectedCustomDate, (date: Date | null) => {
-  if (date) {
+  if (date && selectedEvent.value === "custom") {
     goToEvent("custom");
   }
 });
