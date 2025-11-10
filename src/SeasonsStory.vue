@@ -61,8 +61,8 @@
 
             <!-- <icon-button
               v-model="showLocationSelector"
-              fa-icon="location-dot"
-              fa-size="sm"
+              icon="fa-location-dot"
+              size="sm"
               :color="accentColor"
               tooltip-text="Select Location"
               tooltip-location="start"
@@ -135,11 +135,11 @@
         </div>
         <icon-button
           v-model="showTextSheet"
-          fa-icon="info"
+          icon="fa-info"
           :color="accentColor"
           :tooltip-text="showTextSheet ? 'Hide Info' : 'Learn More'"
           tooltip-location="start"
-          fa-size="sm"
+          size="sm"
         >
         </icon-button>
       </div>
@@ -273,11 +273,11 @@
         :model-value="playing" 
         :store="store"
         :color="accentColor" 
-        :defaultRate="1000"
-        :maxSpeed="10000"
-        :rateDelta="5"
+        :default-rate="1000"
+        :max-speed="10000"
+        :rate-delta="5"
         show-status
-        :hideMoreControls="true"
+        :hide-more-controls="true"
         @reset="() => {
           selectedEvent && goToEvent(selectedEvent);
           wwtStats.timeResetCount += 1;
@@ -299,7 +299,7 @@
       <div id="change-flags">
       <!--
         <icon-button
-          md-icon="mdi-information-outline"
+          icon="mdi-information-outline"
           @activate="() => inIntro = true"
           :color="accentColor"
           :focus-color="accentColor"
@@ -307,11 +307,11 @@
           tooltip-location="bottom"
           tooltip-offset="5px"
           :show-tooltip="!mobile"
-          mdSize="1.2em"
+          size="1.2em"
         >
         </icon-button>
         <icon-button
-          md-icon="mdi-lock"
+          icon="mdi-lock"
           @activate="() => showPrivacyDialog = true"
           :color="accentColor"
           :focus-color="accentColor"
@@ -319,7 +319,7 @@
           tooltip-location="bottom"
           tooltip-offset="5px"
           :show-tooltip="!mobile"
-          mdSize="1.2em"
+          size="1.2em"
         >
         </icon-button>
       -->
@@ -595,6 +595,7 @@
                         <h4><a href="https://www.cosmicds.cfa.harvard.edu/" target="_blank" rel="noopener noreferrer">CosmicDS</a> Vue Data Stories Team:</h4>
                         Pat Udomprasert<br>
                         Jon Carifio<br>
+                        Azmé Tariq<br>
                         Harry Houghton<br>
                         John Lewis<br>
                         Alyssa Goodman<br>
@@ -1730,6 +1731,7 @@ video {
   &.selected {
     color: var(--accent-color);
     border-color: var(--accent-color);
+    box-shadow: none !important;
   }
 }
 
