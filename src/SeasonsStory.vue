@@ -149,8 +149,10 @@
           class="event-title"
         >
           <h4>Displayed Date</h4>
-          <div>
+          <div id="date-info">
             <div>{{ dayString(displayedDate) }}</div>
+            <div>Length of Day: {{ ((endTime - startTime) / 3600000).toFixed(1) }} hr</div>
+            <div>Distance to Sun: {{ sunDistance.toFixed(2) }} au</div>
           </div>
         </div>
         <div class="date-buttons">
@@ -655,6 +657,7 @@ import { resetNSEWText, drawPlanets, renderOneFrame, drawEcliptic, drawSkyOverla
 import { useSun } from "./composables/useSun";
 import { SolarSystemObjects } from "@wwtelescope/engine-types";
 import { formatInTimeZone } from "date-fns-tz";
+import { sunPlace } from "./horizon_sky";
 
 
 type SheetType = "text" | "video";
@@ -697,6 +700,9 @@ const showHorizon = ref(true);
 const startAzOffset = ref(40 * D2R);
 const endAzOffset = ref(-startAzOffset.value);
 const azOffsetSlope = computed(() => (endAzOffset.value - startAzOffset.value) / (endTime.value - startTime.value));
+
+
+const sunDistance = ref(sunPlace.get_distance());
 
 // Get the next 4 "dates of interest"
 // i.e. equinoxes and solstices
@@ -1383,6 +1389,7 @@ watch(currentTime, (_time: Date) => {
   if (forceCamera.value) {
     resetView(store.zoomDeg);
   }
+  sunDistance.value = sunPlace.get_distance();
 });
 
 watch(forceCamera, (value: boolean) => {
@@ -1999,4 +2006,14 @@ svg.fa-xmark {
   overflow: visible;
   z-index: 9000;
 }
+
+#date-info {
+  border-radius: 5px;
+  border: 1px solid var(--accent-color);
+  background: black;
+  padding: 0.5rem;
+  font-size: 0.9rem;
+  text-align: right;
+}
+
 </style>
