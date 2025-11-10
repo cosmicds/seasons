@@ -148,11 +148,30 @@
           id="date-title"
           class="event-title"
         >
+        <button 
+            @click="showDatePicker = !showDatePicker"
+            class="display-date-button mr-2"
+          >
+            <font-awesome-layers>
+              <font-awesome-icon
+                icon="calendar-week"
+                color="black"
+              />
+              <font-awesome-icon
+                icon="calendar-week"
+                :color="accentColor"
+                transform="shrink-3"
+              />
+            </font-awesome-layers>
+          </button>
           <h4>Displayed Date</h4>
-          <div>
-            <div>{{ dayString(displayedDate) }}</div>
           </div>
-        </div>
+          <button id="date-info" @click="showDatePicker = !showDatePicker" class="event-button">
+            <div>{{ dayString(displayedDate) }}</div>
+            <div>Length of Day: {{ ((endTime - startTime) / 3600000).toFixed(1) }} hr</div>
+            <div>Distance to Sun: {{ sunDistance.toFixed(2) }} au</div>
+          </button>
+        
         <div class="date-buttons">
           <button
             :class="[event === selectedEvent ? 'selected' : '']"
@@ -188,7 +207,7 @@
                 </v-card-title>
                 <v-card-text class="my-0 mx=2 pa-0">
                   <v-date-picker
-                    v-model="selectedCustomDate"
+                    :model-value="selectedCustomDate"
                     @update:model-value="handleDateSelection"
                     :color="accentColor"
                     hide-header
@@ -656,6 +675,7 @@ import { resetNSEWText, drawPlanets, renderOneFrame, drawEcliptic, drawSkyOverla
 import { useSun } from "./composables/useSun";
 import { SolarSystemObjects } from "@wwtelescope/engine-types";
 import { formatInTimeZone } from "date-fns-tz";
+import { sunPlace } from "./horizon_sky";
 
 
 type SheetType = "text" | "video";
@@ -698,6 +718,9 @@ const showHorizon = ref(true);
 const startAzOffset = ref(40 * D2R);
 const endAzOffset = ref(-startAzOffset.value);
 const azOffsetSlope = computed(() => (endAzOffset.value - startAzOffset.value) / (endTime.value - startTime.value));
+
+
+const sunDistance = ref(sunPlace.get_distance());
 
 // Get the next 4 "dates of interest"
 // i.e. equinoxes and solstices
@@ -856,11 +879,13 @@ function getCurrentSeasonForDate(date: Date, latitude: number): 'spring' | 'summ
   // Determine which season the date falls into
   let season: 'spring' | 'summer' | 'autumn' | 'winter';
   
-  if (date >= marEquinox && date < junSolstice) {
+  const getDate = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  
+  if (getDate(date) >= getDate(marEquinox) && getDate(date) < getDate(junSolstice)) {
     season = 'spring';
-  } else if (date >= junSolstice && date < sepEquinox) {
+  } else if (getDate(date) >= getDate(junSolstice) && getDate(date) < getDate(sepEquinox)) {
     season = 'summer';
-  } else if (date >= sepEquinox && date < decSolstice) {
+  } else if (getDate(date) >= getDate(sepEquinox) && getDate(date) < getDate(decSolstice)) {
     season = 'autumn';
   } else {
     // Either before March equinox or after December solstice (winter)
@@ -985,7 +1010,9 @@ function goToEvent(event: EventOfInterest) {
   const time = day.getTime();
 
   const [start, end] = getStartAndEndTimes(day);
-
+  if (event !== 'custom') {
+    selectedCustomDate.value = day;
+  }
   store.setTime(new Date(time));
   const timeStart = start.getTime();
   store.setTime(new Date(timeStart));
@@ -1021,6 +1048,7 @@ let userSelectedMapLocations: [number, number][] = [];
 let userSelectedSearchLocations: [number, number][] = [];
 
 function updateLocationFromMap(location: LocationDeg) {
+  console.log("Updating location from map:", location);
   selectedLocation.value = location;
   userSelectedMapLocations.push([location.latitudeDeg, location.longitudeDeg]);
 }
@@ -1044,8 +1072,13 @@ interface LocationInfo {
 }
 
 async function getLocationInfo(longitudeDeg: number, latitudeDeg: number): Promise<LocationInfo> {
+  let location: string = "";
   // eslint-disable-next-line @typescript-eslint/naming-convention
-  const location = await textForLocation(longitudeDeg, latitudeDeg, geocodingOptions);
+  try {
+    location = await textForLocation(longitudeDeg, latitudeDeg, geocodingOptions);
+  } catch (err) {
+    console.error("Error getting location text:", err);
+  }
   const locationName = !startsWithNumber(location) ? `${location}` : "";
   const formattedLat = latText(latitudeDeg);
   const formattedLon = lonText(longitudeDeg);
@@ -1384,6 +1417,7 @@ watch(currentTime, (_time: Date) => {
   if (forceCamera.value) {
     resetView(store.zoomDeg);
   }
+  sunDistance.value = sunPlace.get_distance();
 });
 
 watch(forceCamera, (value: boolean) => {
@@ -1395,6 +1429,12 @@ watch(forceCamera, (value: boolean) => {
 watch(selectedEvent, (event: EventOfInterest | null) => {
   if (event) {
     goToEvent(event);
+  }
+});
+
+watch(selectedCustomDate, (date: Date | null) => {
+  if (date && selectedEvent.value === "custom") {
+    goToEvent("custom");
   }
 });
 
@@ -1752,7 +1792,8 @@ video {
 
 #date-title {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   gap: 5px;
   align-items: flex-end;
 
@@ -1869,7 +1910,8 @@ video {
 
     .v-slider-thumb__label {
       color: white;
-      background-color: black;
+      background-color: rgba(0, 0, 0, 0.6);
+      font-weight: 600;
       border: 2px solid var(--accent-color);
       border-radius: 5px;
       width: max-content;
@@ -1987,4 +2029,32 @@ video {
     }
   }  
 }
+
+svg.fa-xmark {
+  padding: 0.5em;
+  margin: -0.5em;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+}
+
+#geolocation-close >  svg.fa-xmark:hover {
+  background-color: rgba(255, 255, 255, 0.5);
+  overflow: visible;
+  z-index: 9000;
+}
+
+#date-info {
+  /* most of the styling comes from .event-button */
+  border: 1px solid var(--accent-color);
+  text-align: right;
+  user-select: none; /* Standard */
+  margin-bottom: 10px;
+  pointer-events: auto;
+}
+
+.display-date-button {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
 </style>

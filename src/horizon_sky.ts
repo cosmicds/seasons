@@ -21,7 +21,7 @@ import { HorizonSkyOptions } from "./types";
 import { equatorialToHorizontal, horizontalToEquatorial, skyOpacityForSunAlt } from "./utils";
 import { D2R, R2D } from "@cosmicds/vue-toolkit";
 
-const sunPlace = new Place();
+export const sunPlace = new Place();
 sunPlace.set_names(["Sun"]);
 sunPlace.set_classification(Classification.solarSystem);
 sunPlace.set_target(SolarSystemObjects.sun);
