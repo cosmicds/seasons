@@ -861,11 +861,13 @@ function getCurrentSeasonForDate(date: Date, latitude: number): 'spring' | 'summ
   // Determine which season the date falls into
   let season: 'spring' | 'summer' | 'autumn' | 'winter';
   
-  if (date >= marEquinox && date < junSolstice) {
+  const getDate = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  
+  if (getDate(date) >= getDate(marEquinox) && getDate(date) < getDate(junSolstice)) {
     season = 'spring';
-  } else if (date >= junSolstice && date < sepEquinox) {
+  } else if (getDate(date) >= getDate(junSolstice) && getDate(date) < getDate(sepEquinox)) {
     season = 'summer';
-  } else if (date >= sepEquinox && date < decSolstice) {
+  } else if (getDate(date) >= getDate(sepEquinox) && getDate(date) < getDate(decSolstice)) {
     season = 'autumn';
   } else {
     // Either before March equinox or after December solstice (winter)
