@@ -1985,4 +1985,17 @@ video {
     }
   }  
 }
+
+svg.fa-xmark {
+  padding: 0.5em;
+  margin: -0.5em;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+}
+
+#geolocation-close >  svg.fa-xmark:hover {
+  background-color: rgba(255, 255, 255, 0.5);
+  overflow: visible;
+  z-index: 9000;
+}
 </style>
