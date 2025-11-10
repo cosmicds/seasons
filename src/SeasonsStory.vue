@@ -1867,7 +1867,8 @@ video {
 
     .v-slider-thumb__label {
       color: white;
-      background-color: black;
+      background-color: rgba(0, 0, 0, 0.6);
+      font-weight: 600;
       border: 2px solid var(--accent-color);
       border-radius: 5px;
       width: max-content;
