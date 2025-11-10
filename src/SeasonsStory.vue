@@ -1047,6 +1047,7 @@ let userSelectedMapLocations: [number, number][] = [];
 let userSelectedSearchLocations: [number, number][] = [];
 
 function updateLocationFromMap(location: LocationDeg) {
+  console.log("Updating location from map:", location);
   selectedLocation.value = location;
   userSelectedMapLocations.push([location.latitudeDeg, location.longitudeDeg]);
 }
@@ -1070,8 +1071,13 @@ interface LocationInfo {
 }
 
 async function getLocationInfo(longitudeDeg: number, latitudeDeg: number): Promise<LocationInfo> {
+  let location: string = "";
   // eslint-disable-next-line @typescript-eslint/naming-convention
-  const location = await textForLocation(longitudeDeg, latitudeDeg, geocodingOptions);
+  try {
+    location = await textForLocation(longitudeDeg, latitudeDeg, geocodingOptions);
+  } catch (err) {
+    console.error("Error getting location text:", err);
+  }
   const locationName = !startsWithNumber(location) ? `${location}` : "";
   const formattedLat = latText(latitudeDeg);
   const formattedLon = lonText(longitudeDeg);
