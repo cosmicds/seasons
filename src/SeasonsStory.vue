@@ -170,8 +170,8 @@
             <div>{{ dayString(displayedDate) }}</div>
             <div>Length of Day: {{ ((endTime - startTime) / 3600000).toFixed(1) }} hr</div>
             <div>Distance to Sun: {{ sunDistance.toFixed(2) }} au</div>
-          </div>
-        </div>
+          </button>
+        
         <div class="date-buttons">
           <button
             :class="[event === selectedEvent ? 'selected' : '']"
