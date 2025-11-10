@@ -148,8 +148,25 @@
           id="date-title"
           class="event-title"
         >
+        <button 
+            @click="showDatePicker = !showDatePicker"
+            class="display-date-button mr-2"
+          >
+            <font-awesome-layers>
+              <font-awesome-icon
+                icon="calendar-week"
+                color="black"
+              />
+              <font-awesome-icon
+                icon="calendar-week"
+                :color="accentColor"
+                transform="shrink-3"
+              />
+            </font-awesome-layers>
+          </button>
           <h4>Displayed Date</h4>
-          <div id="date-info">
+          </div>
+          <button id="date-info" @click="showDatePicker = !showDatePicker" class="event-button">
             <div>{{ dayString(displayedDate) }}</div>
             <div>Length of Day: {{ ((endTime - startTime) / 3600000).toFixed(1) }} hr</div>
             <div>Distance to Sun: {{ sunDistance.toFixed(2) }} au</div>
@@ -1765,7 +1782,8 @@ video {
 
 #date-title {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   gap: 5px;
   align-items: flex-end;
 
@@ -2016,12 +2034,17 @@ svg.fa-xmark {
 }
 
 #date-info {
-  border-radius: 5px;
+  /* most of the styling comes from .event-button */
   border: 1px solid var(--accent-color);
-  background: black;
-  padding: 0.5rem;
-  font-size: 0.9rem;
   text-align: right;
+  user-select: none; /* Standard */
+  margin-bottom: 10px;
+  pointer-events: auto;
+}
+
+.display-date-button {
+  cursor: pointer;
+  pointer-events: auto;
 }
 
 </style>
