@@ -190,7 +190,7 @@
                 </v-card-title>
                 <v-card-text class="my-0 mx=2 pa-0">
                   <v-date-picker
-                    v-model="selectedCustomDate"
+                    :model-value="selectedCustomDate"
                     @update:model-value="handleDateSelection"
                     :color="accentColor"
                     hide-header
@@ -1401,6 +1401,12 @@ watch(forceCamera, (value: boolean) => {
 watch(selectedEvent, (event: EventOfInterest | null) => {
   if (event) {
     goToEvent(event);
+  }
+});
+
+watch(selectedCustomDate, (date: Date | null) => {
+  if (date) {
+    goToEvent("custom");
   }
 });
 
