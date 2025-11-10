@@ -154,11 +154,11 @@
           >
             <font-awesome-layers>
               <font-awesome-icon
-                icon="calendar-week"
+                icon="calendar-day"
                 color="black"
               />
               <font-awesome-icon
-                icon="calendar-week"
+                icon="calendar-day"
                 :color="accentColor"
                 transform="shrink-3"
               />
@@ -167,7 +167,7 @@
           <h4>Displayed Date</h4>
           </div>
           <button id="date-info" @click="showDatePicker = !showDatePicker" class="event-button">
-            <div>{{ dayString(displayedDate) }}</div>       
+            <div class="mb-1"><strong>{{ dayString(displayedDate) }}</strong></div>       
             <div>Length of Day: {{ formatDayLength(endTime - startTime) }}</div>
             <div>Distance to Sun: {{ sunDistance.toFixed(2) }} au</div>
           </button>
@@ -193,7 +193,9 @@
               size="small"
               class="calendar-button event-button"
             >
-              <v-icon left>mdi-calendar</v-icon>
+              <font-awesome-icon
+                icon="calendar-day"
+              />
               Choose Any Date
             </button>
             
