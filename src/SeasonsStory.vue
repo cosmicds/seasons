@@ -75,7 +75,7 @@
             class="event-button info-button"
             @click="showLocationSelector = true"
           > 
-          <div><strong>{{ selectedLocationInfo.name }}</strong></div>
+          <div class="mb-1"><strong>{{ selectedLocationInfo.name }}</strong></div>
           <div>Lat: {{ selectedLocationInfo.latitude }}</div>
           <div>Long: {{ selectedLocationInfo.longitude }}</div>
           </button>
@@ -2088,6 +2088,12 @@ svg.fa-xmark {
   &:hover {
     opacity: 0.7;
   }
+}
+
+.icon-wrapper, .options {
+  &:hover {
+    opacity: 0.7;
+  }  
 }
 
 </style>
