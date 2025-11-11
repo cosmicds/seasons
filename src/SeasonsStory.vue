@@ -1863,7 +1863,7 @@ video {
   display: flex;
   flex-direction: row;
   position: absolute;
-  bottom: 3rem;
+  bottom: 1.5rem;
   left: 50%;
   transform: translateX(-50%);
   // width: calc(100% - 2rem);
@@ -1886,6 +1886,10 @@ video {
       display: none;
     }
   }  
+
+  @media (max-height: 599px) {
+    bottom: 0.5rem;
+  }
 
   #speed-text {
     font-size: 1rem;
@@ -1926,7 +1930,7 @@ video {
 
     .v-slider-thumb__label {
       color: white;
-      background-color: rgba(0, 0, 0, 0.6);
+      background-color: rgba(0, 0, 0, 0.5);
       font-weight: 600;
       border: 2px solid var(--accent-color);
       border-radius: 5px;
@@ -2030,7 +2034,13 @@ video {
   bottom: 0.1em;
 
   img {
-    height: 36px;
+    height: 32px;
+  }
+
+  @media (max-height: 599px) {
+    img {
+      display: none;
+    }
   }
 }
 
