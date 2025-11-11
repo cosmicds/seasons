@@ -44,7 +44,7 @@
 
             <button 
               @click="showLocationSelector = !showLocationSelector"
-              class="icon-location-button"
+              class="icon-location-button clickable-object"
             >
               <font-awesome-layers>
                 <font-awesome-icon
@@ -67,15 +67,15 @@
               tooltip-text="Select Location"
               tooltip-location="start"
             ></icon-button> -->
-            <h4>View from</h4>
+            <h4 @click="showLocationSelector = !showLocationSelector" class="clickable-object">View from</h4>
           </div>
           <!-- eslint-disable-next-line vue/no-v-text-v-html-on-component -->
           <button
             id="location-button"
-            class="event-button selected"
+            class="event-button info-button"
             @click="showLocationSelector = true"
           > 
-          <div>{{ selectedLocationInfo.name }}</div>
+          <div><strong>{{ selectedLocationInfo.name }}</strong></div>
           <div>Lat: {{ selectedLocationInfo.latitude }}</div>
           <div>Long: {{ selectedLocationInfo.longitude }}</div>
           </button>
@@ -150,7 +150,7 @@
         >
         <button 
             @click="showDatePicker = !showDatePicker"
-            class="display-date-button mr-2"
+            class="display-date-button mr-2 clickable-object"
           >
             <font-awesome-layers>
               <font-awesome-icon
@@ -164,9 +164,9 @@
               />
             </font-awesome-layers>
           </button>
-          <h4>Displayed Date</h4>
+          <h4 @click="showDatePicker = !showDatePicker" class="clickable-object">Displayed Date</h4>
           </div>
-          <button id="date-info" @click="showDatePicker = !showDatePicker" class="event-button">
+          <button id="date-info" @click="showDatePicker = !showDatePicker" class="event-button info-button">
             <div class="mb-1"><strong>{{ dayString(displayedDate) }}</strong></div>       
             <div>Length of Day: {{ formatDayLength(endTime - startTime) }}</div>
             <div>Distance to Sun: {{ sunDistance.toFixed(2) }} au</div>
@@ -1771,9 +1771,6 @@ video {
   border-radius: 5px;
   padding: 0.5rem;
   pointer-events: auto;
-}
-
-.event-button {
   border-color: white;
   width: 100%;
 
@@ -1781,7 +1778,17 @@ video {
     color: var(--accent-color);
     border-color: var(--accent-color);
     box-shadow: none !important;
+
+    &:hover {
+      border-color: color-mix(in srgb, var(--accent-color) 70%, black);
+    }
   }
+
+  transition: opacity 0.2s ease;
+  
+  &:hover {
+    border-color: color-mix(in srgb, white 70%, black);
+  }  
 }
 
 .options {
@@ -2053,17 +2060,34 @@ svg.fa-xmark {
 }
 
 #date-info {
+  margin-bottom: 10px;
+}
+
+.info-button {
   /* most of the styling comes from .event-button */
   border: 1px solid var(--accent-color);
   text-align: right;
   user-select: none; /* Standard */
-  margin-bottom: 10px;
   pointer-events: auto;
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--accent-color) 70%, black);
+  }  
 }
 
 .display-date-button {
   cursor: pointer;
   pointer-events: auto;
+}
+
+.clickable-object {
+  cursor: pointer;
+  pointer-events: auto;
+  transition: opacity 0.2s ease;
+  
+  &:hover {
+    opacity: 0.7;
+  }
 }
 
 </style>
