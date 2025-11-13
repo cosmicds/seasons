@@ -258,7 +258,10 @@
 
         <div class="time-chips">
           <v-chip
-            @click="sliderValue = sliderMin"
+            @click="() => {
+              sliderValue = sliderMin;
+              resetView(MAX_ZOOM);
+            }"
             :color="accentColor"
             variant="elevated"
             size="x-small"
@@ -267,7 +270,10 @@
             Sunrise
           </v-chip>
           <v-chip
-            @click="sliderValue = (sliderMin + sliderMax) / 2"
+            @click="() => {
+              sliderValue = (sliderMin + sliderMax) / 2;
+              resetView(MAX_ZOOM);
+            }"
             :color="accentColor"
             variant="elevated"
             size="x-small"
@@ -278,6 +284,7 @@
           <v-chip
             @click="() => {
               sliderValue = sliderMax;
+              resetView(MAX_ZOOM);
             }"
             :color="accentColor"
             variant="elevated"
@@ -1029,6 +1036,9 @@ function updateSliderBounds(_newLocation: LocationDeg, oldLocation: LocationDeg)
 }
 
 function handlePlaying( _playing ) {
+  if(forceCamera.value) {
+    resetView(MAX_ZOOM);
+  }
   // Auto-pause when time reaches sunset or sunrise, accounting for playing direction
   if (playing.value && ((currentTime.value.getTime() >= endTime.value && store.clockRate >= 0) || ( currentTime.value.getTime() <= startTime.value && store.clockRate <= 0))) {
     playing.value = false;
