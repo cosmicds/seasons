@@ -168,7 +168,7 @@
           </div>
           <button id="date-info" @click="showDatePicker = !showDatePicker" class="event-button info-button">
             <div class="mb-1"><strong>{{ dayString(displayedDate) }}</strong></div>       
-            <div>Length of Day: {{ formatDayLength(endTime - startTime) }}</div>
+            <div>Length of Day: {{ formatDayLength(endTime - startTime, currentDayInfo[2]) }}</div>
             <div>Distance to Sun: {{ sunDistance.toFixed(2) }} au</div>
           </button>
         
@@ -949,6 +949,11 @@ const displayedDate = computed(() => {
   return new Date(); // fallback
 });
 
+const currentDayInfo = computed(() => {
+  const day = getDateForEvent(selectedEvent.value || 'today');
+  return getStartAndEndTimes(day);
+});
+
 function dayString(date: Date) {
   return date.toLocaleString("en-US", {
     year: "numeric",
@@ -957,20 +962,43 @@ function dayString(date: Date) {
   });
 }
 
-function formatDayLength(milliseconds: number): string {
+function formatDayLength(milliseconds: number, polarInfo: { sunAlwaysUp: boolean; sunAlwaysDown: boolean }): string {
+  if (polarInfo.sunAlwaysDown) {
+    return "0h 0m";
+  }
+  
+  if (polarInfo.sunAlwaysUp) {
+    return "24h 0m";
+  }
+  
+  // Normal calculation for days with sunrise/sunset
   const totalMinutes = Math.round(milliseconds / 60000);
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
   return `${hours}h ${minutes}m`;
 }
 
-function getStartAndEndTimes(day: Date): [Date, Date] {
+function getStartAndEndTimes(day: Date): [Date, Date, { sunAlwaysUp: boolean; sunAlwaysDown: boolean }] {
   const time = day.getTime();
   const { rising: dayStart, setting: dayEnd } = getTimeforSunAlt(0, time);
 
   let start: Date;
   let end: Date;
+  let sunAlwaysUp = false;
+  let sunAlwaysDown = false;
+
   if (dayStart === null || dayEnd === null) {
+    
+    // Check if the sun is always above or always below the horizon
+    const noonTime = time - (time % (24 * 60 * 60 * 1000)) - selectedTimezoneOffset.value + 12 * 60 * 60 * 1000;
+    const noonSun = getSunPositionAtTime(new Date(noonTime));
+    
+    if (noonSun.altRad > 0) {
+      sunAlwaysUp = true;
+    } else {
+      sunAlwaysDown = true;
+    }
+    
     start = new Date(time); 
     start.setHours(0, 0, 0, 0);
     start = new Date(start.getTime() - selectedTimezoneOffset.value);
@@ -979,16 +1007,15 @@ function getStartAndEndTimes(day: Date): [Date, Date] {
     start = new Date(dayStart);
     end = new Date(dayEnd);
   }
-
-
-  return [start, end];
+  
+  return [start, end, { sunAlwaysUp, sunAlwaysDown }];
 }
 
 function updateSliderBounds(_newLocation: LocationDeg, oldLocation: LocationDeg) {
   if (selectedEvent.value === null) {
     return;
   }
-  const [start, end] = getStartAndEndTimes(getDateForEvent(selectedEvent.value));
+  const [start, end, _polarInfo] = getStartAndEndTimes(getDateForEvent(selectedEvent.value));
   startTime.value = start.getTime();
   endTime.value = end.getTime();
 
@@ -1018,7 +1045,7 @@ function goToEvent(event: EventOfInterest) {
   const day = getDateForEvent(event);
   const time = day.getTime();
 
-  const [start, end] = getStartAndEndTimes(day);
+  const [start, end, _polarInfo] = getStartAndEndTimes(day);
   if (event !== 'custom') {
     selectedCustomDate.value = day;
   }
