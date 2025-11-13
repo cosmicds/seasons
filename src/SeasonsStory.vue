@@ -44,7 +44,7 @@
 
             <button 
               @click="showLocationSelector = !showLocationSelector"
-              class="icon-location-button"
+              class="icon-location-button clickable-object"
             >
               <font-awesome-layers>
                 <font-awesome-icon
@@ -67,15 +67,15 @@
               tooltip-text="Select Location"
               tooltip-location="start"
             ></icon-button> -->
-            <h4>View from</h4>
+            <h4 @click="showLocationSelector = !showLocationSelector" class="clickable-object">View from</h4>
           </div>
           <!-- eslint-disable-next-line vue/no-v-text-v-html-on-component -->
           <button
             id="location-button"
-            class="event-button selected"
+            class="event-button info-button"
             @click="showLocationSelector = true"
           > 
-          <div>{{ selectedLocationInfo.name }}</div>
+          <div v-if="selectedLocationInfo.name" class="mb-1"><strong>{{ selectedLocationInfo.name }}</strong></div>
           <div>Lat: {{ selectedLocationInfo.latitude }}</div>
           <div>Long: {{ selectedLocationInfo.longitude }}</div>
           </button>
@@ -150,25 +150,25 @@
         >
         <button 
             @click="showDatePicker = !showDatePicker"
-            class="display-date-button mr-2"
+            class="display-date-button mr-2 clickable-object"
           >
             <font-awesome-layers>
               <font-awesome-icon
-                icon="calendar-week"
+                icon="calendar-day"
                 color="black"
               />
               <font-awesome-icon
-                icon="calendar-week"
+                icon="calendar-day"
                 :color="accentColor"
                 transform="shrink-3"
               />
             </font-awesome-layers>
           </button>
-          <h4>Displayed Date</h4>
+          <h4 @click="showDatePicker = !showDatePicker" class="clickable-object">Displayed Date</h4>
           </div>
-          <button id="date-info" @click="showDatePicker = !showDatePicker" class="event-button">
-            <div>{{ dayString(displayedDate) }}</div>
-            <div>Length of Day: {{ ((endTime - startTime) / 3600000).toFixed(1) }} hr</div>
+          <button id="date-info" @click="showDatePicker = !showDatePicker" class="event-button info-button">
+            <div class="mb-1"><strong>{{ dayString(displayedDate) }}</strong></div>       
+            <div>Length of Day: {{ formatDayLength(endTime - startTime, currentDayInfo[2]) }}</div>
             <div>Distance to Sun: {{ sunDistance.toFixed(2) }} au</div>
           </button>
         
@@ -193,7 +193,9 @@
               size="small"
               class="calendar-button event-button"
             >
-              <v-icon left>mdi-calendar</v-icon>
+              <font-awesome-icon
+                icon="calendar-day"
+              />
               Choose Any Date
             </button>
             
@@ -256,7 +258,10 @@
 
         <div class="time-chips">
           <v-chip
-            @click="sliderValue = sliderMin"
+            @click="() => {
+              sliderValue = sliderMin;
+              resetView(MAX_ZOOM);
+            }"
             :color="accentColor"
             variant="elevated"
             size="x-small"
@@ -265,7 +270,10 @@
             Sunrise
           </v-chip>
           <v-chip
-            @click="sliderValue = (sliderMin + sliderMax) / 2"
+            @click="() => {
+              sliderValue = (sliderMin + sliderMax) / 2;
+              resetView(MAX_ZOOM);
+            }"
             :color="accentColor"
             variant="elevated"
             size="x-small"
@@ -276,6 +284,7 @@
           <v-chip
             @click="() => {
               sliderValue = sliderMax;
+              resetView(MAX_ZOOM);
             }"
             :color="accentColor"
             variant="elevated"
@@ -547,7 +556,7 @@
                     The Reason for Seasons
                   </h3>
                   <p>
-                    Earth's axis has a 23.5 degree tilt, which causes the seasons we experience.
+                    Earth's axis has a 23.4 degree tilt, which causes the seasons we experience.
                   </p>
                   <p>
                     The key factors are how high in the sky the Sun gets, and how long it stays in the sky on a particular day. The higher the Sun and the longer it is in the sky, the more energy we receive.
@@ -673,7 +682,6 @@ import { useTimezone } from "./timezones";
 import { horizontalToEquatorial } from "./utils";
 import { resetNSEWText, drawPlanets, renderOneFrame, drawEcliptic, drawSkyOverlays } from "./wwt-hacks";
 import { useSun } from "./composables/useSun";
-import { SolarSystemObjects } from "@wwtelescope/engine-types";
 import { formatInTimeZone } from "date-fns-tz";
 import { sunPlace } from "./horizon_sky";
 
@@ -731,14 +739,13 @@ const datesOfInterest = Seasons(currentYear);
 // Find dates that have passed and sort them by date
 const pastEvents = Object.entries(datesOfInterest)
   .filter(([_key, value]: [string, AstroTime]) => value.date < currentDate)
-  .sort((a, b) => a[1].date.getTime() - b[1].date.getTime());
+  .map(entry => entry[0]);
 
 // If we have more than 1 past event, replace the older ones with next year's events
 // Keep only the most recent past event as our starting point
-if (pastEvents.length > 1) {
+if (pastEvents.length > 0) {
   const nextSeasonsInfo = Seasons(currentYear + 1);
-  const eventsToReplace = pastEvents.slice(0, -1); // All except the most recent past event
-  eventsToReplace.forEach(([key]) => {
+  pastEvents.forEach(key => {
     datesOfInterest[key] = nextSeasonsInfo[key];
   });
 }
@@ -947,6 +954,11 @@ const displayedDate = computed(() => {
   return new Date(); // fallback
 });
 
+const currentDayInfo = computed(() => {
+  const day = getDateForEvent(selectedEvent.value || 'today');
+  return getStartAndEndTimes(day);
+});
+
 function dayString(date: Date) {
   return date.toLocaleString("en-US", {
     year: "numeric",
@@ -955,31 +967,60 @@ function dayString(date: Date) {
   });
 }
 
-function getStartAndEndTimes(day: Date): [Date, Date] {
+function formatDayLength(milliseconds: number, polarInfo: { sunAlwaysUp: boolean; sunAlwaysDown: boolean }): string {
+  if (polarInfo.sunAlwaysDown) {
+    return "0h 0m";
+  }
+  
+  if (polarInfo.sunAlwaysUp) {
+    return "24h 0m";
+  }
+  
+  // Normal calculation for days with sunrise/sunset
+  const totalMinutes = Math.round(milliseconds / 60000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${hours}h ${minutes}m`;
+}
+
+function getStartAndEndTimes(day: Date): [Date, Date, { sunAlwaysUp: boolean; sunAlwaysDown: boolean }] {
   const time = day.getTime();
   const { rising: dayStart, setting: dayEnd } = getTimeforSunAlt(0, time);
 
   let start: Date;
   let end: Date;
+  let sunAlwaysUp = false;
+  let sunAlwaysDown = false;
+
   if (dayStart === null || dayEnd === null) {
-    start = new Date(time); 
-    start.setHours(0, 0, 0, 0);
-    start = new Date(start.getTime() - selectedTimezoneOffset.value);
-    end = new Date(start.getTime() + 86400000 - 60);
+    
+    // Check if the sun is always above or always below the horizon
+    const noonTime = time - (time % (24 * 60 * 60 * 1000)) - selectedTimezoneOffset.value + 12 * 60 * 60 * 1000;
+    const noonSun = getSunPositionAtTime(new Date(noonTime));
+    
+    if (noonSun.altRad > 0) {
+      sunAlwaysUp = true;
+    } else {
+      sunAlwaysDown = true;
+    }
+    // utcMidnight = time - (time % (24 * 60 * 60 * 1000))
+    // localMidnight = utcMidnight - timezone offset
+    const localMidnight = time - (time % (24 * 60 * 60 * 1000)) - selectedTimezoneOffset.value;
+    start = new Date(localMidnight);
+    end = new Date(localMidnight + 86400000 - 60);
   } else {
     start = new Date(dayStart);
     end = new Date(dayEnd);
   }
-
-
-  return [start, end];
+  
+  return [start, end, { sunAlwaysUp, sunAlwaysDown }];
 }
 
 function updateSliderBounds(_newLocation: LocationDeg, oldLocation: LocationDeg) {
   if (selectedEvent.value === null) {
     return;
   }
-  const [start, end] = getStartAndEndTimes(getDateForEvent(selectedEvent.value));
+  const [start, end, _polarInfo] = getStartAndEndTimes(getDateForEvent(selectedEvent.value));
   startTime.value = start.getTime();
   endTime.value = end.getTime();
 
@@ -995,6 +1036,9 @@ function updateSliderBounds(_newLocation: LocationDeg, oldLocation: LocationDeg)
 }
 
 function handlePlaying( _playing ) {
+  if(forceCamera.value) {
+    resetView(MAX_ZOOM);
+  }
   // Auto-pause when time reaches sunset or sunrise, accounting for playing direction
   if (playing.value && ((currentTime.value.getTime() >= endTime.value && store.clockRate >= 0) || ( currentTime.value.getTime() <= startTime.value && store.clockRate <= 0))) {
     playing.value = false;
@@ -1009,7 +1053,7 @@ function goToEvent(event: EventOfInterest) {
   const day = getDateForEvent(event);
   const time = day.getTime();
 
-  const [start, end] = getStartAndEndTimes(day);
+  const [start, end, _polarInfo] = getStartAndEndTimes(day);
   if (event !== 'custom') {
     selectedCustomDate.value = day;
   }
@@ -1036,6 +1080,7 @@ const wwtStats = markRaw({
 const selectedLocation = ref<LocationDeg>({
   longitudeDeg: -71.1056,
   latitudeDeg: 42.3581,
+  // latitudeDeg: 72.40 // test polar latitude
 });
 const selectedLocationInfo = ref<LocationInfo>({ name: "", latitude: "", longitude: "" });
 const searchErrorMessage = ref<string | null>(null);
@@ -1378,23 +1423,12 @@ function doWWTModifications() {
   WWTControl.singleton.renderOneFrame = newFrameRender;
 
   const originalUpdatePlanetLocations = Planets.updatePlanetLocations;
-  const planetScales = [
-    4,  // Sun
-    1.25,  // Mercury
-    1.25,  // Venus
-    1.25,  // Mars
-    2.5,  // Jupiter
-    4.5,  // Saturn
-    2,  // Uranus
-    2,  // Neptune
-    1,  // Pluto
-    1.25,  // Moon
-  ];
   function newUpdatePlanetLocations(threeD: boolean) {
     originalUpdatePlanetLocations(threeD);
-    for (let i = 0; i <= SolarSystemObjects.moon; i++) {
-      Planets._planetScales[i] = planetScales[i];
-    }
+    // Only scale the Sun (index 0)
+    // Use smaller scale (1) during polar night, normal scale (4) otherwise
+    const polarInfo = currentDayInfo.value[2];
+    Planets._planetScales[0] = polarInfo.sunAlwaysDown ? 1 : 4;
   }
   Planets.updatePlanetLocations = newUpdatePlanetLocations;
   Planets.drawPlanets = drawPlanets;
@@ -1762,17 +1796,25 @@ video {
   border-radius: 5px;
   padding: 0.5rem;
   pointer-events: auto;
-}
-
-.event-button {
   border-color: white;
   width: 100%;
 
   &.selected {
     color: var(--accent-color);
     border-color: var(--accent-color);
+    border-radius: 5px !important;
     box-shadow: none !important;
+
+    &:hover {
+      border-color: color-mix(in srgb, var(--accent-color) 70%, black);
+    }
   }
+
+  transition: opacity 0.2s ease;
+  
+  &:hover {
+    border-color: color-mix(in srgb, white 70%, black);
+  }  
 }
 
 .options {
@@ -1847,7 +1889,7 @@ video {
   display: flex;
   flex-direction: row;
   position: absolute;
-  bottom: 3rem;
+  bottom: 1.5rem;
   left: 50%;
   transform: translateX(-50%);
   // width: calc(100% - 2rem);
@@ -1870,6 +1912,10 @@ video {
       display: none;
     }
   }  
+
+  @media (max-height: 599px) {
+    bottom: 0.5rem;
+  }
 
   #speed-text {
     font-size: 1rem;
@@ -1910,7 +1956,7 @@ video {
 
     .v-slider-thumb__label {
       color: white;
-      background-color: rgba(0, 0, 0, 0.6);
+      background-color: rgba(0, 0, 0, 0.5);
       font-weight: 600;
       border: 2px solid var(--accent-color);
       border-radius: 5px;
@@ -2014,7 +2060,13 @@ video {
   bottom: 0.1em;
 
   img {
-    height: 36px;
+    height: 32px;
+  }
+
+  @media (max-height: 599px) {
+    img {
+      display: none;
+    }
   }
 }
 
@@ -2044,17 +2096,40 @@ svg.fa-xmark {
 }
 
 #date-info {
+  margin-bottom: 10px;
+}
+
+.info-button {
   /* most of the styling comes from .event-button */
   border: 1px solid var(--accent-color);
   text-align: right;
   user-select: none; /* Standard */
-  margin-bottom: 10px;
   pointer-events: auto;
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--accent-color) 70%, black);
+  }  
 }
 
 .display-date-button {
   cursor: pointer;
   pointer-events: auto;
+}
+
+.clickable-object {
+  cursor: pointer;
+  pointer-events: auto;
+  transition: opacity 0.2s ease;
+  
+  &:hover {
+    opacity: 0.7;
+  }
+}
+
+.icon-wrapper, .options {
+  &:hover {
+    opacity: 0.7;
+  }  
 }
 
 </style>
