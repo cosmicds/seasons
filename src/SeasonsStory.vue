@@ -997,11 +997,11 @@ function getStartAndEndTimes(day: Date): [Date, Date, { sunAlwaysUp: boolean; su
     } else {
       sunAlwaysDown = true;
     }
-    
-    start = new Date(time); 
-    start.setHours(0, 0, 0, 0);
-    start = new Date(start.getTime() - selectedTimezoneOffset.value);
-    end = new Date(start.getTime() + 86400000 - 60);
+    // utcMidnight = time - (time % (24 * 60 * 60 * 1000))
+    // localMidnight = utcMidnight - timezone offset
+    const localMidnight = time - (time % (24 * 60 * 60 * 1000)) - selectedTimezoneOffset.value;
+    start = new Date(localMidnight);
+    end = new Date(localMidnight + 86400000 - 60);
   } else {
     start = new Date(dayStart);
     end = new Date(dayEnd);
