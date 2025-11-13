@@ -1080,6 +1080,7 @@ const wwtStats = markRaw({
 const selectedLocation = ref<LocationDeg>({
   longitudeDeg: -71.1056,
   latitudeDeg: 42.3581,
+  // latitudeDeg: 72.40 // test polar latitude
 });
 const selectedLocationInfo = ref<LocationInfo>({ name: "", latitude: "", longitude: "" });
 const searchErrorMessage = ref<string | null>(null);
@@ -1801,6 +1802,7 @@ video {
   &.selected {
     color: var(--accent-color);
     border-color: var(--accent-color);
+    border-radius: 5px !important;
     box-shadow: none !important;
 
     &:hover {
