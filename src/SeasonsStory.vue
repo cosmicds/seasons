@@ -75,7 +75,7 @@
             class="event-button info-button"
             @click="showLocationSelector = true"
           > 
-          <div class="mb-1"><strong>{{ selectedLocationInfo.name }}</strong></div>
+          <div v-if="selectedLocationInfo.name" class="mb-1"><strong>{{ selectedLocationInfo.name }}</strong></div>
           <div>Lat: {{ selectedLocationInfo.latitude }}</div>
           <div>Long: {{ selectedLocationInfo.longitude }}</div>
           </button>
@@ -549,7 +549,7 @@
                     The Reason for Seasons
                   </h3>
                   <p>
-                    Earth's axis has a 23.5 degree tilt, which causes the seasons we experience.
+                    Earth's axis has a 23.4 degree tilt, which causes the seasons we experience.
                   </p>
                   <p>
                     The key factors are how high in the sky the Sun gets, and how long it stays in the sky on a particular day. The higher the Sun and the longer it is in the sky, the more energy we receive.
