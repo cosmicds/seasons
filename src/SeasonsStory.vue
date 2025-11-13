@@ -1416,7 +1416,9 @@ function doWWTModifications() {
   function newUpdatePlanetLocations(threeD: boolean) {
     originalUpdatePlanetLocations(threeD);
     // Only scale the Sun (index 0)
-    Planets._planetScales[0] = 4;
+    // Use smaller scale (1) during polar night, normal scale (4) otherwise
+    const polarInfo = currentDayInfo.value[2];
+    Planets._planetScales[0] = polarInfo.sunAlwaysDown ? 1 : 4;
   }
   Planets.updatePlanetLocations = newUpdatePlanetLocations;
   Planets.drawPlanets = drawPlanets;
