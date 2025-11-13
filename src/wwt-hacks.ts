@@ -264,7 +264,7 @@ export function renderOneFrame(showHorizon=true,
   }
 
   if (showHorizon) {
-    drawHorizon(this.renderContext, { opacity: 0.95, color: "#01362C" });
+    drawHorizon(this.renderContext, { opacity: 0.9, color: "#01362C" });
   }
 
   const worldSave = this.renderContext.get_world();
