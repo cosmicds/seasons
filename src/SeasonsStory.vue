@@ -660,6 +660,49 @@
       </v-card>
     </v-dialog>
 
+    <!-- Data collection opt-out dialog -->
+    <v-dialog
+      scrim="false"
+      v-model="showPrivacyDialog"
+      max-width="400px"
+      id="privacy-popup-dialog"
+    >
+      <v-card>
+        <v-card-text>
+          To evaluate usage of this app, <strong>anonymized</strong> data may be collected, including locations searched or selected on map. Places selected via geolocation services on your device are NOT collected.
+        </v-card-text>
+        <v-card-actions class="pt-3">
+          <v-spacer></v-spacer>
+          <v-btn
+            color="#BDBDBD"
+            href="https://www.cfa.harvard.edu/privacy-statement"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+          Privacy Policy
+          </v-btn>
+          <v-btn
+            color="#ff6666"
+            @click="() => {
+              responseOptOut = true;
+              showPrivacyDialog = false;
+            }"
+          >
+          Opt out
+          </v-btn>
+          <v-btn 
+            color="green"
+            @click="() => {
+              responseOptOut = false;
+              showPrivacyDialog = false;
+            }"
+          >
+            Allow
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
   </div>
 </v-app>
 </template>
@@ -1498,6 +1541,7 @@ const storedOptOut = window.localStorage.getItem(OPT_OUT_KEY);
 const maybeUUID = window.localStorage.getItem(UUID_KEY);
 const optOut = typeof storedOptOut === "string" ? storedOptOut === "true" : null;
 const responseOptOut = ref(optOut);
+const showPrivacyDialog = ref(false);
 const existingUser = maybeUUID !== null;
 const uuid = maybeUUID ?? v4();
 if (!existingUser) {
@@ -1599,6 +1643,18 @@ function updateUserData() {
     keepalive: true,
   }).then(() => resetData());
 }
+
+watch(showSplashScreen, (show: boolean) => {
+  if (!show && responseOptOut.value === null) {
+    showPrivacyDialog.value = true; 
+  }
+});
+
+watch(responseOptOut, (optOut: boolean | null) => {
+  if (optOut !== null) {
+    window.localStorage.setItem(OPT_OUT_KEY, String(optOut));
+  }
+});
 
 window.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
