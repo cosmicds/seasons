@@ -2329,4 +2329,26 @@ svg.fa-xmark {
   }  
 }
 
+#privacy-popup-dialog {
+
+  .v-card-text {
+    color: #BDBDBD;
+  }
+
+  .v-overlay__content {
+    font-size: var(--default-font-size);
+    background-color: purple;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+  }
+
+  .v-btn--size-default {
+      font-size: calc(0.9 * var(--default-font-size));
+    }  
+
+  .v-card-actions .v-btn {
+    padding: 0 4px;
+  }
+}
 </style>
