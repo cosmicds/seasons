@@ -728,7 +728,7 @@ import {
   useWWTKeyboardControls,
   D2R,
   R2D,
-  API_BASE_URL,
+  // API_BASE_URL,
 } from "@cosmicds/vue-toolkit";
 import { MapBoxFeature, MapBoxFeatureCollection, geocodingInfoForSearch, textForLocation } from "@cosmicds/vue-toolkit/src/mapbox";
 
@@ -1534,7 +1534,8 @@ watch(selectedCustomDate, (date: Date | null) => {
 watch(inNorthernHemisphere, (_inNorth: boolean) => resetNSEWText());
 
 
-const STORY_DATA_URL = `${API_BASE_URL}/seasons/data/`;
+// const STORY_DATA_URL = `${API_BASE_URL}/seasons/data`;
+const STORY_DATA_URL = "http://localhost:8081/seasons/data";
 const OPT_OUT_KEY = "seasons-optout" as const;
 const UUID_KEY = "seasons-uuid" as const;
 const storedOptOut = window.localStorage.getItem(OPT_OUT_KEY);
@@ -1606,6 +1607,35 @@ function updateUserData() {
   }
 
   const now = Date.now();
+  const body = {
+    events,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    time_slider_used_count: timeSliderUsedCount,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    user_selected_dates: userSelectedDates,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    user_selected_locations: userSelectedLocations,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    app_time_ms: now - appStartTimestamp,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    wwt_time_reset_count: wwtStats.timeResetCount,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    wwt_reverse_count: wwtStats.reverseCount,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    wwt_play_pause_count: wwtStats.playPauseCount,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    wwt_speedups: wwtStats.speedups,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    wwt_slowdowns: wwtStats.slowdowns,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    wwt_rate_selections: wwtStats.rateSelections,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    wwt_start_stop_times: [wwtStats.startTime, selectedTime.value],
+  } as Record<string, unknown>;
+  if (ahaMomentResponse) {
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    body.aha_moment_response = ahaMomentResponse;
+  }
   fetch(`${STORY_DATA_URL}/${uuid}`, {
     method: "PATCH",
     headers: {
@@ -1613,33 +1643,7 @@ function updateUserData() {
       // eslint-disable-next-line @typescript-eslint/naming-convention
       "Authorization": process.env.VUE_APP_CDS_API_KEY ?? "",
     },
-    body: JSON.stringify({
-      events,
-      // eslint-disable-next-line @typescript-eslint/naming-convention
-      time_slider_used_count: timeSliderUsedCount,
-      // eslint-disable-next-line @typescript-eslint/naming-convention
-      aha_moment_response: ahaMomentResponse,
-      // eslint-disable-next-line @typescript-eslint/naming-convention
-      user_selected_dates: userSelectedDates,
-      // eslint-disable-next-line @typescript-eslint/naming-convention
-      user_selected_locations: userSelectedLocations,
-      // eslint-disable-next-line @typescript-eslint/naming-convention
-      app_time_ms: now - appStartTimestamp,
-      // eslint-disable-next-line @typescript-eslint/naming-convention
-      wwt_time_reset_count: wwtStats.timeResetCount,
-      // eslint-disable-next-line @typescript-eslint/naming-convention
-      wwt_reverse_count: wwtStats.reverseCount,
-      // eslint-disable-next-line @typescript-eslint/naming-convention
-      wwt_play_pause_count: wwtStats.playPauseCount,
-      // eslint-disable-next-line @typescript-eslint/naming-convention
-      wwt_speedups: wwtStats.speedups,
-      // eslint-disable-next-line @typescript-eslint/naming-convention
-      wwt_slowdowns: wwtStats.slowdowns,
-      // eslint-disable-next-line @typescript-eslint/naming-convention
-      wwt_rate_selections: wwtStats.rateSelections,
-      // eslint-disable-next-line @typescript-eslint/naming-convention
-      wwt_start_stop_times: [wwtStats.startTime, selectedTime.value],
-    }),
+    body: JSON.stringify(body),
     keepalive: true,
   }).then(() => resetData());
 }
