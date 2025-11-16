@@ -703,6 +703,13 @@
       </v-card>
     </v-dialog>
 
+    <question-dialog
+      v-show="showQuestion"
+      @dismiss="showQuestion = false"
+      @finish="(response: string) => { ahaMomentResponse = response; }"
+    >
+    </question-dialog>
+
   </div>
 </v-app>
 </template>
@@ -769,6 +776,7 @@ const sheet = ref<SheetType | null>(null);
 const layersLoaded = ref(false);
 const positionSet = ref(false);
 const forceCamera = ref(true);
+const showQuestion = ref(false);
 
 const tab = ref(0);
 
@@ -2351,4 +2359,50 @@ svg.fa-xmark {
     padding: 0 4px;
   }
 }
+
+.question-root {
+  position: absolute !important;
+  right: 5px;
+  bottom: 0;
+  padding: 5px;
+  width: fit-content !important;
+  // left: 50%;
+  // transform: translateX(-50%);
+  gap: 0 !important;
+  border: solid 1px #EFEFEF !important;
+  border-radius: 10px !important;
+  background-color: #222222 !important;
+  opacity: 0.95 !important;
+  z-index: 20000;
+
+  .question-title {
+    color: #EFEFEF;
+    font-size: var(--default-font-size);
+  }
+
+  .response-box {
+    width: 100%;
+    margin-top: 20px;
+  }
+
+  .v-card-text {
+    padding-bottom: 0;
+  }
+
+  .v-card-actions {
+    padding: 0;
+  }
+
+  .privacy-button {
+    font-size: 10px;
+    position: absolute;
+    left: 5px;
+  }
+
+  .v-btn.bg-success {
+    position: absolute;
+    right: 5px;
+  }
+}
+
 </style>
