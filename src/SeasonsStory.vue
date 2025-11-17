@@ -740,7 +740,7 @@ import {
   useWWTKeyboardControls,
   D2R,
   R2D,
-  // API_BASE_URL,
+  API_BASE_URL,
 } from "@cosmicds/vue-toolkit";
 import { MapBoxFeature, MapBoxFeatureCollection, geocodingInfoForSearch, textForLocation } from "@cosmicds/vue-toolkit/src/mapbox";
 
@@ -1549,8 +1549,7 @@ watch(selectedCustomDate, (date: Date | null) => {
 watch(inNorthernHemisphere, (_inNorth: boolean) => resetNSEWText());
 
 
-// const STORY_DATA_URL = `${API_BASE_URL}/seasons/data`;
-const STORY_DATA_URL = "http://localhost:8081/seasons/data";
+const STORY_DATA_URL = `${API_BASE_URL}/seasons/data`;
 const OPT_OUT_KEY = "seasons-optout" as const;
 const UUID_KEY = "seasons-uuid" as const;
 const storedOptOut = window.localStorage.getItem(OPT_OUT_KEY);
