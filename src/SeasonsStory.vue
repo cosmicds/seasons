@@ -703,12 +703,17 @@
       </v-card>
     </v-dialog>
 
-    <question-dialog
-      v-show="showQuestion"
-      @dismiss="showQuestion = false"
-      @finish="(response: string) => { ahaMomentResponse = response; }"
-    >
-    </question-dialog>
+    <v-expand-transition>
+      <question-dialog
+        v-show="showQuestion"
+        @dismiss="showQuestion = false"
+        @finish="(response: string) => {
+          ahaMomentResponse = response;
+          showQuestion = false;
+        }"
+      >
+      </question-dialog>
+    </v-expand-transition>
 
   </div>
 </v-app>
@@ -1316,6 +1321,8 @@ onMounted(() => {
     // If there are layers to set up, do that here!
     positionSet.value = true;
     layersLoaded.value = true;
+
+    questionDisplaySetup();
   });
 
   createUserEntry();
@@ -1567,6 +1574,30 @@ let appStartTimestamp = Date.now();
 function onTimeSliderEnd(_value: number) {
   timeSliderUsedCount += 1;
   events.push("time_slider_used");
+}
+
+async function questionDisplaySetup() {
+  if (responseOptOut.value) {
+    return;
+  }
+
+  const existingDataResponse = await fetch(`${STORY_DATA_URL}/${uuid}`, {
+    method: "GET",
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    headers: { "Authorization": process.env.VUE_APP_CDS_API_KEY ?? "" }
+  });
+
+  const existingDataContent = await existingDataResponse.json();
+  const alreadyAnswered = existingDataResponse.status === 200 && existingDataContent.response.aha_moment_response;
+
+  if (alreadyAnswered) {
+    return;
+  }
+
+  setTimeout(() => {
+    showQuestion.value = true; 
+  // }, 4 * 60_000);
+  }, 15);
 }
 
 async function createUserEntry() {
@@ -2397,11 +2428,6 @@ svg.fa-xmark {
     font-size: 10px;
     position: absolute;
     left: 5px;
-  }
-
-  .v-btn.bg-success {
-    position: absolute;
-    right: 5px;
   }
 }
 

@@ -6,15 +6,14 @@
   >
     <template #title>
       <div class="question-title">
-        <span>{{ question }}</span>
-        <v-spacer></v-spacer>
-        <v-btn
-          density="compact"
-          class="close-button"
-          icon="mdi-close"
-          @click="emit('dismiss', response)"
-        ></v-btn>
+        {{ question }} 
       </div>
+     <v-btn
+        density="compact"
+        class="close-button"
+        icon="mdi-close"
+        @click="emit('dismiss', response)"
+      ></v-btn>
     </template>
     <v-card-text>
       <v-form
@@ -25,7 +24,6 @@
             v-model="response"
             class="response-box text-body-2"
             :placeholder="commentPlaceholder"
-            auto-grow
             max-rows="4"
             density="compact"
             width="100%"
@@ -105,6 +103,7 @@ const response = ref<string | null>(null);
   gap: 10px;
   align-items: center;
   padding: 5px;
+  max-width: 45%;
 }
 
 .rating {
@@ -134,18 +133,30 @@ const response = ref<string | null>(null);
   width: 75%;
 }
 
+.v-card-text {
+  width: 90%;
+}
+
 .v-card-actions {
   display: var(--footer-visible);
 }
 
 .close-button {
-  display: inline;
+  display: absolute;
+  top: 2px;
+  right: 2px;
 }
 
 .question-title {
   width: 100%;
   text-align: center;
   padding: 5px 10px;
+  white-space: normal;
+  word-break: auto-phrase;
+}
+
+.question-text {
+  max-width: calc(100% - 30px);
 }
 
 .close-button {
