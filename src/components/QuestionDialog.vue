@@ -60,7 +60,7 @@ import {
   faFaceFrown,
 } from "@fortawesome/free-solid-svg-icons";
 
-import { VTextarea, VExpandTransition, VCard, VForm, VSpacer, VCardText, VBtn } from "vuetify/components";
+import { VTextarea, VExpandTransition, VCard, VForm, VCardText, VBtn } from "vuetify/components";
 
 interface QuestionProps {
   question?: string;
