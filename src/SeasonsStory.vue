@@ -669,7 +669,7 @@
     >
       <v-card>
         <v-card-text>
-          To evaluate usage of this app, <strong>anonymized</strong> data may be collected, including locations searched or selected on map. Places selected via geolocation services on your device are NOT collected.
+          To evaluate usage of this app, <strong>anonymized</strong> data may be collected, including user feedback and locations searched or selected on map. Places selected via geolocation services on your device are NOT collected.
         </v-card-text>
         <v-card-actions class="pt-3">
           <v-spacer></v-spacer>
