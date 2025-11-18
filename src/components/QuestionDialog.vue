@@ -33,7 +33,9 @@
         </v-expand-transition>
         <v-expand-transition>
           <div class="button-row">
-            <v-spacer></v-spacer>
+            <span class="info-text">
+              Your anonymous response will be used by the CosmicDS team to improve the educational experience.
+            </span>
             <v-btn
               type="submit"
               width="fit-content"
@@ -165,6 +167,12 @@ const response = ref<string | null>(null);
 .button-row {
   display: flex;
   flex-direction: row;
+  justify-content: space-between;
+}
+
+.info-text {
+  font-size: 0.75rem;
+  color: lightgray;
 }
 
 .close-button {
