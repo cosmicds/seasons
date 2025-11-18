@@ -32,13 +32,16 @@
           </VTextarea>
         </v-expand-transition>
         <v-expand-transition>
-          <v-btn
-            type="submit"
-            width="fit-content"
-            color="success"
-          >
-            Submit 
-          </v-btn>
+          <div class="button-row">
+            <v-spacer></v-spacer>
+            <v-btn
+              type="submit"
+              width="fit-content"
+              color="success"
+            >
+              Submit 
+            </v-btn>
+          </div>
       </v-expand-transition>
       </v-form>
     </v-card-text>
@@ -157,6 +160,11 @@ const response = ref<string | null>(null);
 
 .question-text {
   max-width: calc(100% - 30px);
+}
+
+.button-row {
+  display: flex;
+  flex-direction: row;
 }
 
 .close-button {
