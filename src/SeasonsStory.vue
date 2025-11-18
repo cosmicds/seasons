@@ -1635,6 +1635,16 @@ function resetData() {
   userSelectedDates = [];
   userSelectedLocations = [];
   ahaMomentResponse = null;
+  Object.assign(wwtStats, {
+    timeResetCount: 0,
+    reverseCount: 0,
+    playPauseCount: 0,
+    speedups: [],
+    slowdowns: [],
+    rateSelections: [],
+    startTime: selectedTime.value,
+  });
+
   const now = Date.now();
   appStartTimestamp = now;
 }
