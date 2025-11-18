@@ -33,9 +33,6 @@
         </v-expand-transition>
         <v-expand-transition>
           <div class="button-row">
-            <span class="info-text">
-              Your anonymous response will be used by the CosmicDS team to improve the educational experience.
-            </span>
             <v-btn
               type="submit"
               width="fit-content"
@@ -44,8 +41,13 @@
               Submit 
             </v-btn>
           </div>
-      </v-expand-transition>
+        </v-expand-transition>
       </v-form>
+      <div>
+        <span class="info-text">
+          Your anonymous response will be used by the CosmicDS team to improve the educational experience.
+        </span>
+      </div>
     </v-card-text>
     <template #actions>
       <slot name="footer"></slot>
@@ -56,16 +58,6 @@
 <script setup lang="ts">
 /* eslint-disable @typescript-eslint/naming-convention */
 import { computed, ref, useSlots } from "vue";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import {
-  faFaceGrinStars,
-  faFaceSmile,
-  faFaceMeh,
-  faFaceFrownOpen,
-  faFaceFrown,
-} from "@fortawesome/free-solid-svg-icons";
-
-import { VTextarea, VExpandTransition, VCard, VForm, VCardText, VBtn } from "vuetify/components";
 
 interface QuestionProps {
   question?: string;
@@ -91,12 +83,6 @@ const showFooter = computed(() => !!slots.footer);
 const css = computed(() => ({
   "--footer-visible": showFooter.value ? "visible" : "none",
 }));
-
-library.add(faFaceGrinStars);
-library.add(faFaceSmile);
-library.add(faFaceMeh);
-library.add(faFaceFrownOpen);
-library.add(faFaceFrown);
 
 const response = ref<string | null>(null);
 </script>
@@ -153,9 +139,10 @@ const response = ref<string | null>(null);
 }
 
 .question-title {
+  font-size: 0.9rem;
   width: 100%;
   text-align: center;
-  padding: 5px 10px;
+  padding: 5px;
   white-space: normal;
   word-break: auto-phrase;
 }
