@@ -347,6 +347,7 @@
           size="1.2em"
         >
         </icon-button>
+      -->
         <icon-button
           icon="mdi-lock"
           @activate="() => showPrivacyDialog = true"
@@ -359,7 +360,6 @@
           size="1.2em"
         >
         </icon-button>
-      -->
       </div>
     </div>
     <div id="body-logos" v-if="!smallSize">
@@ -1337,7 +1337,7 @@ const inNorthernHemisphere = computed(() => selectedLocation.value.latitudeDeg >
 
 /* Properties related to device/screen characteristics */
 const smallSize = computed(() => smAndDown.value);
-// const mobile = computed(() => smallSize.value && touchscreen);
+const mobile = computed(() => smallSize.value && touchscreen);
 
 /* This lets us inject component data into element CSS */
 const cssVars = computed(() => {
