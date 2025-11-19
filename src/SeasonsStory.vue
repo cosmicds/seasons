@@ -1602,8 +1602,7 @@ async function questionDisplaySetup() {
 
   setTimeout(() => {
     showQuestion.value = true; 
-  // }, 4 * 60_000);
-  }, 15);
+  }, 4 * 60_000);
 }
 
 async function createUserEntry() {
