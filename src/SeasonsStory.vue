@@ -707,6 +707,10 @@
       <question-dialog
         v-show="showQuestion"
         @dismiss="showQuestion = false"
+        @opt-out="() => {
+          showQuestion = false;
+          ahaOptOut = true;
+        }"
         @finish="(response: string) => {
           ahaMomentResponse = response;
           showQuestion = false;
@@ -1551,11 +1555,14 @@ watch(inNorthernHemisphere, (_inNorth: boolean) => resetNSEWText());
 
 const STORY_DATA_URL = `${API_BASE_URL}/seasons/data`;
 const OPT_OUT_KEY = "seasons-optout" as const;
+const AHA_OPT_OUT_KEY = "seasons-aha-optout" as const;
 const UUID_KEY = "seasons-uuid" as const;
 const storedOptOut = window.localStorage.getItem(OPT_OUT_KEY);
+const storedAhaOptOut = window.localStorage.getItem(AHA_OPT_OUT_KEY);
 const maybeUUID = window.localStorage.getItem(UUID_KEY);
 const optOut = typeof storedOptOut === "string" ? storedOptOut === "true" : null;
 const responseOptOut = ref(optOut);
+const ahaOptOut = ref(typeof storedAhaOptOut === "string" ? storedAhaOptOut === "true" : null);
 const showPrivacyDialog = ref(false);
 const existingUser = maybeUUID !== null;
 const uuid = maybeUUID ?? v4();
@@ -1576,7 +1583,7 @@ function onTimeSliderEnd(_value: number) {
 }
 
 async function questionDisplaySetup() {
-  if (responseOptOut.value) {
+  if (responseOptOut.value || ahaOptOut.value) {
     return;
   }
 
@@ -1705,6 +1712,12 @@ watch(showSplashScreen, (show: boolean) => {
 watch(responseOptOut, (optOut: boolean | null) => {
   if (optOut !== null) {
     window.localStorage.setItem(OPT_OUT_KEY, String(optOut));
+  }
+});
+
+watch(ahaOptOut, (optOut: boolean | null) => {
+  if (optOut !== null) {
+    window.localStorage.setItem(AHA_OPT_OUT_KEY, String(optOut));
   }
 });
 

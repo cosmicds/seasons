@@ -34,6 +34,14 @@
         <v-expand-transition>
           <div class="button-row">
             <v-btn
+              color="#BDBDBD"
+              size="small"
+              variant="text"
+              @click="emit('opt-out')"
+            >
+              Don't show this again
+            </v-btn>
+            <v-btn
               type="submit"
               width="fit-content"
               color="success"
@@ -74,6 +82,7 @@ withDefaults(defineProps<QuestionProps>(), {
 
 const emit = defineEmits<{
   (event: "dismiss", response: string | null): void;
+  (event: "opt-out"): void;
   (event: "finish", response: string | null): void;
 }>();
 
