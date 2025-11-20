@@ -360,6 +360,18 @@
           size="1.2em"
         >
         </icon-button>
+        <icon-button
+          icon="mdi-help"
+          @activate="showQuestion = true"
+          :color="accentColor"
+          :focus-color="accentColor"
+          tooltip-text="Share your thoughts"
+          tooltip-location="bottom"
+          tooltip-offset="5px"
+          :show-tooltip="!mobile"
+          size="1.2em"
+        >
+        </icon-button>
       </div>
     </div>
     <div id="body-logos" v-if="!smallSize">
@@ -791,6 +803,7 @@ const layersLoaded = ref(false);
 const positionSet = ref(false);
 const forceCamera = ref(true);
 const showQuestion = ref(false);
+let questionTimeout: ReturnType<typeof setTimeout> | null = null;
 
 const tab = ref(0);
 
@@ -802,7 +815,6 @@ const showHorizon = ref(true);
 const startAzOffset = ref(40 * D2R);
 const endAzOffset = ref(-startAzOffset.value);
 const azOffsetSlope = computed(() => (endAzOffset.value - startAzOffset.value) / (endTime.value - startTime.value));
-
 
 const sunDistance = ref(sunPlace.get_distance());
 
@@ -1609,7 +1621,7 @@ async function questionDisplaySetup() {
 }
 
 function setQuestionTimeout(timeout=4 * 60_000) {
-  setTimeout(() => {
+  questionTimeout = setTimeout(() => {
     showQuestion.value = true;
   }, timeout);
 }
@@ -1724,6 +1736,12 @@ watch(responseOptOut, (optOut: boolean | null) => {
 watch(ahaOptOut, (optOut: boolean | null) => {
   if (optOut !== null) {
     window.localStorage.setItem(AHA_OPT_OUT_KEY, String(optOut));
+  }
+});
+
+watch(showQuestion, (show: boolean) => {
+  if (show && questionTimeout) {
+    clearTimeout(questionTimeout);
   }
 });
 
@@ -2361,6 +2379,12 @@ svg.fa-xmark {
 
 #date-info {
   margin-bottom: 10px;
+}
+
+#change-flags {
+  display: flex;
+  flex-direction: row;
+  gap: 3px;
 }
 
 .info-button {
