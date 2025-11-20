@@ -706,13 +706,18 @@
     <v-expand-transition>
       <question-dialog
         v-show="showQuestion"
-        @dismiss="showQuestion = false"
+        @dismiss="() => {
+          showQuestion = false;
+          if (!(responseOptOut || ahaOptOut)) {
+            setQuestionTimeout();
+          }
+        }"
         @opt-out="() => {
           showQuestion = false;
           ahaOptOut = true;
         }"
         @finish="(response: string) => {
-          ahaMomentResponse = response;
+          ahaMomentResponses.push(response);
           showQuestion = false;
         }"
       >
@@ -1574,7 +1579,7 @@ let timeSliderUsedCount = 0;
 let events: string[] = [];
 let userSelectedDates: string[] = [];
 let userSelectedLocations: [number, number][] = [];
-let ahaMomentResponse: string | null = null;
+let ahaMomentResponses: string[] = [];
 let appStartTimestamp = Date.now();
 
 function onTimeSliderEnd(_value: number) {
@@ -1594,15 +1599,19 @@ async function questionDisplaySetup() {
   });
 
   const existingDataContent = await existingDataResponse.json();
-  const alreadyAnswered = existingDataResponse.status === 200 && existingDataContent.response.aha_moment_response;
+  const alreadyAnswered = existingDataResponse.status === 200 && existingDataContent.response.aha_moment_responses.length > 0;
 
   if (alreadyAnswered) {
     return;
   }
 
+  setQuestionTimeout();
+}
+
+function setQuestionTimeout(timeout=4 * 60_000) {
   setTimeout(() => {
-    showQuestion.value = true; 
-  }, 4 * 60_000);
+    showQuestion.value = true;
+  }, timeout);
 }
 
 async function createUserEntry() {
@@ -1640,7 +1649,7 @@ function resetData() {
   events = [];
   userSelectedDates = [];
   userSelectedLocations = [];
-  ahaMomentResponse = null;
+  ahaMomentResponses = [];
   Object.assign(wwtStats, {
     timeResetCount: 0,
     reverseCount: 0,
@@ -1685,11 +1694,9 @@ function updateUserData() {
     wwt_rate_selections: wwtStats.rateSelections,
     // eslint-disable-next-line @typescript-eslint/naming-convention
     wwt_start_stop_times: [wwtStats.startTime, selectedTime.value],
-  } as Record<string, unknown>;
-  if (ahaMomentResponse) {
     // eslint-disable-next-line @typescript-eslint/naming-convention
-    body.aha_moment_response = ahaMomentResponse;
-  }
+    aha_moment_response: ahaMomentResponses,
+  } as Record<string, unknown>;
   fetch(`${STORY_DATA_URL}/${uuid}`, {
     method: "PATCH",
     headers: {
