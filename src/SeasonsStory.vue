@@ -333,46 +333,33 @@
           events.push(`wwt_rate ${rate}`);
         }"
         />
-      <div id="change-flags">
-      <!--
-        <icon-button
-          icon="mdi-information-outline"
-          @activate="() => inIntro = true"
-          :color="accentColor"
-          :focus-color="accentColor"
-          tooltip-text="Show Quick Start Guide"
-          tooltip-location="bottom"
-          tooltip-offset="5px"
-          :show-tooltip="!mobile"
-          size="1.2em"
-        >
-        </icon-button>
-      -->
-        <icon-button
-          icon="mdi-lock"
-          @activate="() => showPrivacyDialog = true"
-          :color="accentColor"
-          :focus-color="accentColor"
-          tooltip-text="Change privacy settings"
-          tooltip-location="bottom"
-          tooltip-offset="5px"
-          :show-tooltip="!mobile"
-          size="1.2em"
-        >
-        </icon-button>
-        <icon-button
-          icon="mdi-help"
-          @activate="showQuestion = true"
-          :color="accentColor"
-          :focus-color="accentColor"
-          tooltip-text="Share your thoughts"
-          tooltip-location="bottom"
-          tooltip-offset="5px"
-          :show-tooltip="!mobile"
-          size="1.2em"
-        >
-        </icon-button>
-      </div>
+    </div>
+    <div id="change-flags">
+      <icon-button
+        v-if="showQuestion"
+        icon="mdi-comment-quote"
+        @activate="showQuestion = true"
+        :color="accentColor"
+        :focus-color="accentColor"
+        tooltip-text="Share your thoughts"
+        tooltip-location="bottom"
+        tooltip-offset="5px"
+        :show-tooltip="!mobile"
+        size="1.2em"
+      >
+      </icon-button>
+      <icon-button
+        icon="mdi-lock"
+        @activate="() => showPrivacyDialog = true"
+        :color="accentColor"
+        :focus-color="accentColor"
+        tooltip-text="Change privacy settings"
+        tooltip-location="bottom"
+        tooltip-offset="5px"
+        :show-tooltip="!mobile"
+        size="1.2em"
+      >
+      </icon-button>
     </div>
     <div id="body-logos" v-if="!smallSize">
       <credit-logos
@@ -2167,20 +2154,19 @@ video {
 }
 
 #bottom-content {
-  width: 80%;
+  width: 75%;
   display: flex;
   flex-direction: row;
   position: absolute;
   bottom: 1.5rem;
   left: 50%;
   transform: translateX(-50%);
-  // width: calc(100% - 2rem);
   pointer-events: none;
   align-items: center;
+  justify-content: center;
   gap: 30px;
 
   @media (max-width: 959px) {
-    width: 95%;
     gap: 5px;
     bottom: 1rem;
   }
@@ -2222,9 +2208,13 @@ video {
   }
   
   @media (max-width: 699px) {
-    padding-left: 1.5rem;
+    padding-left: 2rem;
     padding-right: 1rem;
     min-width: 50%;
+  }
+
+  @media (max-width: 969px) {
+    width: 70%;
   }
 }
 
@@ -2382,9 +2372,33 @@ svg.fa-xmark {
 }
 
 #change-flags {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 4rem;
   display: flex;
   flex-direction: row;
-  gap: 3px;
+  gap: 6px;
+  pointer-events: none;
+
+  @media (max-width: 959px) {
+    right: 0.5rem;
+    bottom: 0.5rem;
+  }
+
+  @media (max-width: 699px) {
+    display: none;
+  }
+
+  @media (max-height: 599px) {
+    bottom: 0.5rem;
+  }
+    
+  .icon-wrapper {
+    margin: 0;
+    padding: 0.15em;
+    border: none;
+    min-width: 0;
+  }
 }
 
 .info-button {
