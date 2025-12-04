@@ -4,18 +4,16 @@
     :color="color"
     :style="css"
   >
-    <template #title>
+    <v-btn
+      density="compact"
+      class="close-button"
+      icon="mdi-close"
+      @click="emit('dismiss', response)"
+    ></v-btn>
+    <v-card-text>
       <div class="question-title">
         {{ question }} 
       </div>
-     <v-btn
-        density="compact"
-        class="close-button"
-        icon="mdi-close"
-        @click="emit('dismiss', response)"
-      ></v-btn>
-    </template>
-    <v-card-text>
       <v-form
         @submit.prevent="emit('finish', response)"
       >
@@ -31,6 +29,11 @@
           >
           </VTextarea>
         </v-expand-transition>
+        <div class="mb-4">
+          <span class="info-text">
+            Your anonymous response will be used by the CosmicDS team to improve the educational experience.
+          </span>
+        </div>
         <v-expand-transition>
           <div class="button-row">
             <v-btn
@@ -51,11 +54,6 @@
           </div>
         </v-expand-transition>
       </v-form>
-      <div>
-        <span class="info-text">
-          Your anonymous response will be used by the CosmicDS team to improve the educational experience.
-        </span>
-      </div>
     </v-card-text>
     <template #actions>
       <slot name="footer"></slot>
@@ -115,42 +113,17 @@ const response = ref<string | null>(null);
   box-shadow: 0 0 0 5px silver;
 }
 
-.rating-notification {
-  border-radius: 5px;
-  font-size: calc(1.1 * var(--default-font-size));
-  padding: 1em;
-  color: white;
-
-  &.success {
-    background-color: #9a009a;
-  }
-  &.error {
-    background-color: #b30000;
-  }
-}
-
-.response-box {
-  width: 75%;
-}
-
 .v-card-text {
-  width: 90%;
+  padding: 2rem;
 }
 
 .v-card-actions {
   display: var(--footer-visible);
 }
 
-.close-button {
-  display: absolute;
-  top: 2px;
-  right: 2px;
-}
-
 .question-title {
-  font-size: 0.9rem;
   width: 100%;
-  text-align: center;
+  text-align: left;
   padding: 5px;
   white-space: normal;
   word-break: auto-phrase;
@@ -163,7 +136,9 @@ const response = ref<string | null>(null);
 .button-row {
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
+  justify-content: right;
+  align-items: center;
+  gap: 1.5rem;
 }
 
 .info-text {
@@ -173,7 +148,7 @@ const response = ref<string | null>(null);
 
 .close-button {
   position: absolute !important;
-  top: 5px;
-  right: 5px;
+  top: 0.5rem;
+  right: 0.5rem;
 }
 </style>
