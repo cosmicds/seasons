@@ -207,7 +207,7 @@
                 <v-card-title class="text-h6 mb-0 mt-2">
                   Select Date
                 </v-card-title>
-                <v-card-text class="my-0 mx=2 pa-0">
+                <v-card-text class="my-0 mx-2 pa-0">
                   <v-date-picker
                     :model-value="selectedCustomDate"
                     @update:model-value="handleDateSelection"
@@ -2459,8 +2459,8 @@ svg.fa-xmark {
 
 .question-root {
   position: absolute !important;
-  right: 5px;
-  bottom: 0;
+  right: 0.5rem;
+  bottom: 0.5rem;
   padding: 5px;
   width: fit-content !important;
   // left: 50%;
@@ -2474,16 +2474,12 @@ svg.fa-xmark {
 
   .question-title {
     color: #EFEFEF;
-    font-size: var(--default-font-size);
+    font-size: 0.9rem;
   }
 
   .response-box {
     width: 100%;
-    margin-top: 20px;
-  }
-
-  .v-card-text {
-    padding-bottom: 0;
+    margin-top: 10px;
   }
 
   .v-card-actions {
