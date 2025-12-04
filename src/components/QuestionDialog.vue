@@ -15,7 +15,7 @@
         {{ question }} 
       </div>
       <v-form
-        @submit.prevent="emit('finish', response)"
+        @submit.prevent="() => { emit('finish', response); response = null; }"
       >
         <v-expand-transition>
           <VTextarea
