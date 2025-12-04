@@ -66,14 +66,12 @@ import { computed, ref, useSlots } from "vue";
 
 interface QuestionProps {
   question?: string;
-  commentPlaceholder?: string;
   color?: string;
   baseColor?: string;
 }
 
 withDefaults(defineProps<QuestionProps>(), {
   question: "Share an “aha” moment about seasons that you experienced from using this app.",
-  commentPlaceholder: "Share your moment here.",
   color: "surface",
 });
 
