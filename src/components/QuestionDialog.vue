@@ -21,7 +21,6 @@
           <VTextarea
             v-model="response"
             class="response-box text-body-2"
-            :placeholder="commentPlaceholder"
             max-rows="4"
             density="compact"
             width="100%"
