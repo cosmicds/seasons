@@ -705,12 +705,7 @@
     <v-expand-transition>
       <question-dialog
         v-show="showQuestion"
-        @dismiss="() => {
-          showQuestion = false;
-          if (!(responseOptOut || ahaOptOut)) {
-            setQuestionTimeout();
-          }
-        }"
+        @dismiss="() => showQuestion = false"
         @opt-out="() => {
           showQuestion = false;
           ahaOptOut = true;
