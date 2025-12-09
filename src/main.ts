@@ -15,6 +15,7 @@ import SeasonsStory from "./SeasonsStory.vue";
 import SplashScreen from "./components/SplashScreen.vue";
 import LocationSearch from "./components/LocationSearch.vue";
 import TimeDisplay from "./components/TimeDisplay.vue";
+import QuestionDialog from "./components/QuestionDialog.vue";
 
 import vuetify from "../plugins/vuetify";
 import { VIcon } from "vuetify/components/VIcon";
@@ -89,6 +90,7 @@ createApp(SeasonsStory, {
   .component('location-selector', LocationSelector)
   .component('date-time-picker', DateTimePicker)
   .component('time-display', TimeDisplay)
+  .component('question-dialog', QuestionDialog)
   .component('v-icon', VIcon)
 
   // Mount
