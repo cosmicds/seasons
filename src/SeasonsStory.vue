@@ -985,30 +985,25 @@ function formatDayLength(milliseconds: number, polarInfo: { sunAlwaysUp: boolean
 
 function getStartAndEndTimes(day: Date): [Date, Date, { sunAlwaysUp: boolean; sunAlwaysDown: boolean }] {
   const time = day.getTime();
-  const { rising: dayStart, setting: dayEnd } = getTimeforSunAlt(0, time);
+  const { rising: dayStart, setting: dayEnd, always } = getTimeforSunAlt(0, time);
 
   let start: Date;
   let end: Date;
-  let sunAlwaysUp = false;
-  let sunAlwaysDown = false;
+  const sunAlwaysUp = always === 'up';
+  const sunAlwaysDown = always === 'down';
 
   if (dayStart === null || dayEnd === null) {
+    console.log("Polar day or night detected");
+    // moved checking for polar day/night to useSun
     
-    // Check if the sun is always above or always below the horizon
-    const noonTime = time - (time % (24 * 60 * 60 * 1000)) - selectedTimezoneOffset.value + 12 * 60 * 60 * 1000;
-    const noonSun = getSunPositionAtTime(new Date(noonTime));
-    
-    if (noonSun.altRad > 0) {
-      sunAlwaysUp = true;
-    } else {
-      sunAlwaysDown = true;
-    }
     // utcMidnight = time - (time % (24 * 60 * 60 * 1000))
     // localMidnight = utcMidnight - timezone offset
     const localMidnight = time - (time % (24 * 60 * 60 * 1000)) - selectedTimezoneOffset.value;
     start = new Date(localMidnight);
     end = new Date(localMidnight + 86400000 - 60);
   } else {
+    console.log("Normal day with sunrise and sunset");
+    console.log(`Sunrise at ${ff(new Date(dayStart))}, Sunset at ${ff(new Date(dayEnd))}`);
     start = new Date(dayStart);
     end = new Date(dayEnd);
   }

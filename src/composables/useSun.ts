@@ -69,35 +69,61 @@ export function useSun(options: UseSunOptions) {
     return sunAltAz;
   }
 
-  // function that finds at what time the sun will reach a given altitude during the current day to within 15 minutes
-  function getTimeforSunAlt(altDeg: number, referenceTime?: number): { rising: number | null; setting: number | null; } {
+  // function that finds at what time the center of the sun will reach a given altitude during the current day to within 15 minutes
+  function getTimeforSunAlt(altDeg: number, referenceTime?: number, useLimb: boolean = true): { rising: number | null; setting: number | null; always: 'up' | 'down' | null } {
     // takes about 45ms to run
     // search for time when sun is at given altitude
     // start at 12:00am and search every MINUTES_PER_INTERVAL
     // const minTime = selectedTime.value - (selectedTime.value % MILLISECONDS_PER_DAY) - selectedTimezoneOffset.value + 0.5 * MILLISECONDS_PER_DAY;
     // const maxTime = minTime + 0.5 * MILLISECONDS_PER_DAY;
-    
+    if (useLimb) {
+      // so if altDeg is 0, we want the center to be at -0.27 degrees
+      altDeg = altDeg - 0.27; // sun's radius in degrees
+    }
     const refTime = referenceTime ?? selectedTime.value;
-    const minTime = refTime - (refTime % MILLISECONDS_PER_DAY) - selectedTimezoneOffset.value; 
-    const maxTime = minTime + 1 * MILLISECONDS_PER_DAY;
+    const startOfDay = refTime - (refTime % MILLISECONDS_PER_DAY) - selectedTimezoneOffset.value; 
+    const justAfterMidDay = startOfDay + 0.5 * MILLISECONDS_PER_DAY; // go a little more than halfway to avoid edge cases
+    const endOfDay = startOfDay + MILLISECONDS_PER_DAY - 1;
     // const ehr = eclipticHorizonAngle(location.latitudeRad, dateTime);
-    let time = minTime;
-    let sunAlt = getSunPositionAtTime(new Date(time)).altRad; // negative
+    
+    // let's begin search at the start of the day
+    let time = startOfDay;
+    let sunAlt = getSunPositionAtTime(new Date(time)).altRad; 
+    const sunAltMid = getSunPositionAtTime(new Date(justAfterMidDay)).altRad; 
+    
+    let always: 'up' | 'down' | null = null;
+    
+    // if the sign a 0.6 days later is the same, then the sun either never rises or never sets
+    if (Math.sign(sunAlt) == Math.sign(sunAltMid)) {
+      if (sunAlt > 0) {
+        always = 'up';
+        return { rising: null, setting: null, always: always };
+      } else if (sunAlt < 0) {
+        always = 'down';
+        return { rising: null, setting: null,  always: always };
+      } else {
+        always = null;
+        console.error("Why is the sun hovering at the horizon. That's not supposed to happen. We'll just say it's always up.");
+        return { rising: null, setting: null,  always: 'up' };
+      }
+    }
+
     // find the two times it crosses the given altitude
-    while ((sunAlt < altDeg * D2R) && (time < maxTime)) {
+    while ((sunAlt < altDeg * D2R) && (time < endOfDay)) {
       time += MILLISECONDS_PER_INTERVAL;
       sunAlt = getSunPositionAtTime(new Date(time)).altRad;
     }
-    const rising = time == maxTime ? null : time;
-    while ((sunAlt > altDeg * D2R) && (time < maxTime)) {
+    const rising = time == endOfDay ? null : time;
+    while ((sunAlt > altDeg * D2R) && (time < endOfDay)) {
       time += MILLISECONDS_PER_INTERVAL;
       sunAlt = getSunPositionAtTime(new Date(time)).altRad;
     }
-    const setting = time == maxTime ? null : time;
+    const setting = time == endOfDay ? null : time;
 
     return {
       'rising': (rising !== null && setting !== null) ? Math.min(rising, setting) : rising,
-      'setting': (rising !== null && setting !== null) ? Math.max(rising, setting) : setting
+      'setting': (rising !== null && setting !== null) ? Math.max(rising, setting) : setting,
+      'always': always,
     };
   }
   
