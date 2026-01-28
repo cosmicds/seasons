@@ -68,18 +68,40 @@ export function useSun(options: UseSunOptions) {
     const sunAltAz = equatorialToHorizontal(currentRaDec.RA * 15 * D2R, currentRaDec.dec * D2R, locationRad.value.latitudeRad, locationRad.value.longitudeRad, time);
     return sunAltAz;
   }
+  
+  function lerp(x0: number, y0: number, x1: number, y1: number, x: number): number {
+    // return y0 + (y1 - y0) * ((x - x0) / (x1 - x0));
+    const m = (y1 - y0) / (x1 - x0);
+    const b = y0 - m * x0;
+    return m * x + b;
+  }
+  
+  function _interpolateSunAltitude(time: number, step: number, desiredAltDeg: number): number {
+    const alt1 = getSunPositionAtTime(new Date(time - step)).altRad;
+    const alt2 = getSunPositionAtTime(new Date(time + step)).altRad;
+    const out =  lerp(alt1, time - step, alt2, time + step, desiredAltDeg * D2R);
+    console.log("Interpolating sun altitude");
+    return out;
+  }
 
   // function that finds at what time the center of the sun will reach a given altitude during the current day to within 15 minutes
-  function getTimeforSunAlt(altDeg: number, referenceTime?: number, useLimb: boolean = true): { rising: number | null; setting: number | null; always: 'up' | 'down' | null } {
+  interface SunAltOptions {
+    useLimb?: boolean;
+    useRefraction?: boolean;
+  }
+  function getTimeforSunAlt(altDeg: number, referenceTime?: number, options?: SunAltOptions ): { rising: number | null; setting: number | null; always: 'up' | 'down' | null } {
     // takes about 45ms to run
     // search for time when sun is at given altitude
     // start at 12:00am and search every MINUTES_PER_INTERVAL
     // const minTime = selectedTime.value - (selectedTime.value % MILLISECONDS_PER_DAY) - selectedTimezoneOffset.value + 0.5 * MILLISECONDS_PER_DAY;
     // const maxTime = minTime + 0.5 * MILLISECONDS_PER_DAY;
-    if (useLimb) {
-      // so if altDeg is 0, we want the center to be at -0.27 degrees
-      altDeg = altDeg - 0.27; // sun's radius in degrees
-    }
+    
+    const useLimb = options && options.useLimb ? options.useLimb : false;
+    const useRefraction = options && options.useRefraction ? options.useRefraction : false;
+    
+    const rSunDeg = ((0.009291568 / 2) / D2R); // from WWT planets.js // Sun's ang size in AU = it's ang size in Radians
+    altDeg = altDeg - (useLimb ? rSunDeg : 0) - (useRefraction ? 0.5667 : 0);
+    
     const refTime = referenceTime ?? selectedTime.value;
     const startOfDay = refTime - (refTime % MILLISECONDS_PER_DAY) - selectedTimezoneOffset.value; 
     const justAfterMidDay = startOfDay + 0.5 * MILLISECONDS_PER_DAY; // go a little more than halfway to avoid edge cases
@@ -113,12 +135,14 @@ export function useSun(options: UseSunOptions) {
       time += MILLISECONDS_PER_INTERVAL;
       sunAlt = getSunPositionAtTime(new Date(time)).altRad;
     }
-    const rising = time == endOfDay ? null : time;
+    let interp = () => _interpolateSunAltitude(time, MILLISECONDS_PER_INTERVAL, altDeg);
+    const rising = time == endOfDay ? null : interp();
     while ((sunAlt > altDeg * D2R) && (time < endOfDay)) {
       time += MILLISECONDS_PER_INTERVAL;
       sunAlt = getSunPositionAtTime(new Date(time)).altRad;
     }
-    const setting = time == endOfDay ? null : time;
+    interp = () =>_interpolateSunAltitude(time, MILLISECONDS_PER_INTERVAL, altDeg);
+    const setting = time == endOfDay ? null : interp();
 
     return {
       'rising': (rising !== null && setting !== null) ? Math.min(rising, setting) : rising,

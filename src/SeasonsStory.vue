@@ -1028,8 +1028,6 @@ function getStartAndEndTimes(day: Date): [Date, Date, { sunAlwaysUp: boolean; su
     start = new Date(localMidnight);
     end = new Date(localMidnight + 86400000 - 60);
   } else {
-    console.log("Normal day with sunrise and sunset");
-    console.log(`Sunrise at ${ff(new Date(dayStart))}, Sunset at ${ff(new Date(dayEnd))}`);
     start = new Date(dayStart);
     end = new Date(dayEnd);
   }
@@ -1449,7 +1447,7 @@ function doWWTModifications() {
     // Only scale the Sun (index 0)
     // Use smaller scale (1) during polar night, normal scale (4) otherwise
     const polarInfo = currentDayInfo.value[2];
-    Planets._planetScales[0] = polarInfo.sunAlwaysDown ? 1 : 4;
+    Planets._planetScales[0] = Planets._planetScales[0] * (polarInfo.sunAlwaysDown ? 1 : 4);
   }
   Planets.updatePlanetLocations = newUpdatePlanetLocations;
   Planets.drawPlanets = drawPlanets;
