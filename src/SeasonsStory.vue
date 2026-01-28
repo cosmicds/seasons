@@ -133,6 +133,17 @@
             hide-details
           />
         </div>
+        <!-- go to sun -->
+        <icon-button
+          v-if="false"
+          @activate="goToSun"
+          icon="fa-sun"
+          :color="accentColor"
+          :tooltip-text="'Go to Sun'"
+          tooltip-location="start"
+          size="sm"
+        >
+      </icon-button>
         <icon-button
           v-model="showTextSheet"
           icon="fa-info"
@@ -983,6 +994,21 @@ function formatDayLength(milliseconds: number, polarInfo: { sunAlwaysUp: boolean
   return `${hours}h ${minutes}m`;
 }
 
+function goToSun() {
+  const sunPos = getSunPositionAtTime(currentTime.value);
+  const radec = horizontalToEquatorial(
+    sunPos.altRad, 
+    sunPos.azRad, 
+    selectedLocation.value.latitudeDeg * D2R,
+    selectedLocation.value.longitudeDeg * D2R,  
+    currentTime.value
+  );
+  store.gotoRADecZoom({
+    ...radec,
+    zoomDeg: Math.min(store.zoomDeg, 180),
+    instant: false,
+  });
+}
 function getStartAndEndTimes(day: Date): [Date, Date, { sunAlwaysUp: boolean; sunAlwaysDown: boolean }] {
   const time = day.getTime();
   const { rising: dayStart, setting: dayEnd, always } = getTimeforSunAlt(0, time);
