@@ -1031,7 +1031,7 @@ function getStartAndEndTimes(day: Date): [Date, Date, { sunAlwaysUp: boolean; su
     start = new Date(dayStart);
     end = new Date(dayEnd);
   }
-  
+
   return [start, end, { sunAlwaysUp, sunAlwaysDown }];
 }
 
@@ -1096,11 +1096,33 @@ const wwtStats = markRaw({
   startTime: Date.now(),
 });
 
+// get lat and lon url query parameters for initial location
+const urlParams = new URLSearchParams(window.location.search);
+const urlLat = urlParams.get("lat");
+const urlLon = urlParams.get("lon");
+let initialLat: number = 42.3581;
+let initialLon: number = -71.1056;
+if (urlLat && urlLon) {
+  initialLat = parseFloat(urlLat);
+  initialLon = parseFloat(urlLon);
+}
 const selectedLocation = ref<LocationDeg>({
-  longitudeDeg: -71.1056,
-  latitudeDeg: 42.3581,
+  longitudeDeg: initialLon,
+  latitudeDeg: initialLat,
   // latitudeDeg: 72.40 // test polar latitude
 });
+
+function createQueryUrl(): string {
+  const lat = selectedLocation.value.latitudeDeg.toFixed(4);
+  const lon = selectedLocation.value.longitudeDeg.toFixed(4);
+  const params = new URLSearchParams(window.location.search);
+  params.set("lat", lat);
+  params.set("lon", lon);
+  return `${window.location}?${params.toString()}`;
+}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(window as any).createQueryUrl = createQueryUrl;
+
 const selectedLocationInfo = ref<LocationInfo>({ name: "", latitude: "", longitude: "" });
 const searchErrorMessage = ref<string | null>(null);
 const geocodingOptions = {
