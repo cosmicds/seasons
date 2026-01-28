@@ -136,13 +136,13 @@ export function useSun(options: UseSunOptions) {
       sunAlt = getSunPositionAtTime(new Date(time)).altRad;
     }
     let interp = () => _interpolateSunAltitude(time, MILLISECONDS_PER_INTERVAL, altDeg);
-    const rising = time == endOfDay ? null : interp();
+    const rising = time >= endOfDay ? null : interp();
     while ((sunAlt > altDeg * D2R) && (time < endOfDay)) {
       time += MILLISECONDS_PER_INTERVAL;
       sunAlt = getSunPositionAtTime(new Date(time)).altRad;
     }
     interp = () =>_interpolateSunAltitude(time, MILLISECONDS_PER_INTERVAL, altDeg);
-    const setting = time == endOfDay ? null : interp();
+    const setting = time >= endOfDay ? null : interp();
 
     return {
       'rising': (rising !== null && setting !== null) ? Math.min(rising, setting) : rising,
