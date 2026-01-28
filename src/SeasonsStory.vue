@@ -278,7 +278,7 @@
             size="x-small"
             class="time-chip"
           >
-            Sunrise
+            {{ (currentDayInfo[2].sunAlwaysDown || currentDayInfo[2].sunAlwaysUp) ?  'Midnight' : 'Sunrise' }}
           </v-chip>
           <v-chip
             @click="() => {
@@ -302,7 +302,7 @@
             size="x-small"
             class="time-chip"
           >
-            Sunset
+            {{ (currentDayInfo[2].sunAlwaysDown || currentDayInfo[2].sunAlwaysUp) ?  'Midnight' : 'Sunset' }}
           </v-chip>
         </div>
       </div>
@@ -1022,6 +1022,9 @@ function getStartAndEndTimes(day: Date): [Date, Date, { sunAlwaysUp: boolean; su
     console.log("Polar day or night detected");
     // moved checking for polar day/night to useSun
     
+    // It don't know if it really make sense to have the slider go 
+    // from 00:00 to 23:59 when for both polar night and noon
+    //  But I think that is the only choice we have
     // utcMidnight = time - (time % (24 * 60 * 60 * 1000))
     // localMidnight = utcMidnight - timezone offset
     const localMidnight = time - (time % (24 * 60 * 60 * 1000)) - selectedTimezoneOffset.value;
