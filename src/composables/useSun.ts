@@ -60,13 +60,18 @@ export function useSun(options: UseSunOptions) {
     } as EquatorialRad;
   });
 
-  function getSunPositionAtTime(time: Date): AltAzRad {
+interface SunPos extends AltAzRad {
+    decRad: number;
+    raRad: number;
+  }
+  
+  function getSunPositionAtTime(time: Date): SunPos {
     const jd = getJulian(time);
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     const currentRaDec = AstroCalc.getPlanet(jd, 0, locationRad.value.latitudeRad, locationRad.value.longitudeRad, 0);
     const sunAltAz = equatorialToHorizontal(currentRaDec.RA * 15 * D2R, currentRaDec.dec * D2R, locationRad.value.latitudeRad, locationRad.value.longitudeRad, time);
-    return sunAltAz;
+    return {...sunAltAz, decRad: currentRaDec.dec * D2R, raRad: currentRaDec.RA * 15 * D2R };
   }
   
   function lerp(x0: number, y0: number, x1: number, y1: number, x: number): number {
@@ -82,6 +87,14 @@ export function useSun(options: UseSunOptions) {
     const out =  lerp(alt1, time - step, alt2, time + step, desiredAltDeg * D2R);
     console.log("Interpolating sun altitude");
     return out;
+  }
+  
+  function meridionalAltitude(sunDec: number, latitude: number) {
+    const upperCulmination = 90 * D2R - Math.abs(latitude - sunDec);
+    const lowerCulmination = -90 * D2R + Math.abs(latitude + sunDec);
+    const alwaysAbove = Math.abs(sunDec + latitude) > 90 * D2R;
+    const alwaysBelow = Math.abs(sunDec - latitude) > 90 * D2R;
+    return {upperCulmination, lowerCulmination, always: (alwaysAbove ? 'up' :  (alwaysBelow ? 'down' : null)) };
   }
 
   // function that finds at what time the center of the sun will reach a given altitude during the current day to within 15 minutes
@@ -104,42 +117,40 @@ export function useSun(options: UseSunOptions) {
     
     const refTime = referenceTime ?? selectedTime.value;
     const startOfDay = refTime - (refTime % MILLISECONDS_PER_DAY) - selectedTimezoneOffset.value; 
-    const justAfterMidDay = startOfDay + 0.5 * MILLISECONDS_PER_DAY; // go a little more than halfway to avoid edge cases
     const endOfDay = startOfDay + MILLISECONDS_PER_DAY - 1;
-    // const ehr = eclipticHorizonAngle(location.latitudeRad, dateTime);
     
     // let's begin search at the start of the day
     let time = startOfDay;
-    let sunAlt = getSunPositionAtTime(new Date(time)).altRad; 
-    const sunAltMid = getSunPositionAtTime(new Date(justAfterMidDay)).altRad; 
+    // eslint-disable-next-line prefer-const
+    let { altRad: sunAlt, decRad : sunDec }  = getSunPositionAtTime(new Date(time)); 
+    const circumstances =  meridionalAltitude(sunDec, locationRad.value.latitudeRad);
+    let upperCulmination = circumstances.upperCulmination;
+    let lowerCulmination = circumstances.lowerCulmination;
     
-    let always: 'up' | 'down' | null = null;
+    let always: 'up' | 'down' | null = circumstances.always as ('up' | 'down' | null);
     
     // if the sign a 0.6 days later is the same, then the sun either never rises or never sets
-    if (Math.sign(sunAlt) == Math.sign(sunAltMid)) {
-      if (sunAlt > 0) {
-        always = 'up';
+    // don't short circuit because timezones mess up the time. you would have to correct to solar
+    if (always === 'up') {
         return { rising: null, setting: null, always: always };
-      } else if (sunAlt < 0) {
-        always = 'down';
+    } else if (always === 'down') {
         return { rising: null, setting: null,  always: always };
-      } else {
-        always = null;
-        console.error("Why is the sun hovering at the horizon. That's not supposed to happen. We'll just say it's always up.");
-        return { rising: null, setting: null,  always: 'up' };
-      }
     }
 
     // find the two times it crosses the given altitude
     while ((sunAlt < altDeg * D2R) && (time < endOfDay)) {
       time += MILLISECONDS_PER_INTERVAL;
       sunAlt = getSunPositionAtTime(new Date(time)).altRad;
+      upperCulmination = Math.max(upperCulmination, sunAlt);
+      lowerCulmination = Math.min(lowerCulmination, sunAlt);
     }
     let interp = () => _interpolateSunAltitude(time, MILLISECONDS_PER_INTERVAL, altDeg);
     const rising = time >= endOfDay ? null : interp();
     while ((sunAlt > altDeg * D2R) && (time < endOfDay)) {
       time += MILLISECONDS_PER_INTERVAL;
       sunAlt = getSunPositionAtTime(new Date(time)).altRad;
+      upperCulmination = Math.max(upperCulmination, sunAlt);
+      lowerCulmination = Math.min(lowerCulmination, sunAlt);
     }
     interp = () =>_interpolateSunAltitude(time, MILLISECONDS_PER_INTERVAL, altDeg);
     const setting = time >= endOfDay ? null : interp();
