@@ -1121,7 +1121,7 @@ function createQueryUrl(): string {
   const params = new URLSearchParams(window.location.search);
   params.set("lat", lat);
   params.set("lon", lon);
-  return `${window.location}?${params.toString()}`;
+  return `${window.location.origin}/?${params.toString()}`;
 }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).createQueryUrl = createQueryUrl;
