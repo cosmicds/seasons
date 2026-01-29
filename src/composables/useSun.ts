@@ -14,8 +14,20 @@ const MILLISECONDS_PER_DAY = 1000 * SECONDS_PER_DAY;
 
 const secondsInterval = 40;
 const MILLISECONDS_PER_INTERVAL = 1000 * secondsInterval;
+const RADIANS_TO_ARCSECONDS = (180 / Math.PI) * 3600; //
+const R2S = RADIANS_TO_ARCSECONDS;
 
 type RefOrType<T> = Ref<T> | T;
+
+interface SunPos extends AltAzRad {
+  decRad: number;
+  raRad: number;
+}
+
+interface SunAltOptions {
+    useLimb?: boolean;
+    useRefraction?: boolean;
+  }
 
 export interface UseSunOptions {
   store: WWTEngineStore;
@@ -60,10 +72,7 @@ export function useSun(options: UseSunOptions) {
     } as EquatorialRad;
   });
   
-  interface SunPos extends AltAzRad {
-    decRad: number;
-    raRad: number;
-  }
+
   
   function getSunPositionAtTime(time: Date): SunPos {
     const jd = getJulian(time);
@@ -89,19 +98,16 @@ export function useSun(options: UseSunOptions) {
     return out;
   }
   
-  function meridionalAltitude(sunDec: number, latitude: number) {
-    const upperCulmination = 90 * D2R - Math.abs(latitude - sunDec);
-    const lowerCulmination = -90 * D2R + Math.abs(latitude + sunDec);
-    const alwaysAbove = Math.abs(sunDec + latitude) > 90 * D2R;
-    const alwaysBelow = Math.abs(sunDec - latitude) > 90 * D2R;
+  function meridionalAltitude(sunDec: number, latitude: number, offset = 0) {
+    const upperCulmination = 90 * D2R - Math.abs(latitude - sunDec) + offset;
+    const lowerCulmination = -90 * D2R + Math.abs(latitude + sunDec) + offset;
+    const alwaysAbove = lowerCulmination > 0;
+    const alwaysBelow = upperCulmination < 0;
     return {upperCulmination, lowerCulmination, always: (alwaysAbove ? 'up' :  (alwaysBelow ? 'down' : null)) };
   }
   
   // function that finds at what time the center of the sun will reach a given altitude during the current day to within 15 minutes
-  interface SunAltOptions {
-    useLimb?: boolean;
-    useRefraction?: boolean;
-  }
+  
   function getTimeforSunAlt(altDeg: number, referenceTime?: number, options?: SunAltOptions ): { rising: number | null; setting: number | null; always: 'up' | 'down' | null } {
     // takes about 45ms to run
     // search for time when sun is at given altitude
@@ -113,7 +119,8 @@ export function useSun(options: UseSunOptions) {
     const useRefraction = options && options.useRefraction ? options.useRefraction : false;
     
     const rSunDeg = ((0.009291568 / 2) / D2R); // from WWT planets.js // Sun's ang size in AU = it's ang size in Radians
-    altDeg = altDeg - (useLimb ? rSunDeg : 0) - (useRefraction ? 0.5667 : 0);
+    const extraDeg = (useLimb ? rSunDeg : 0) + (useRefraction ? 0.5667 : 0);
+    altDeg = altDeg - extraDeg;
     
     const refTime = referenceTime ?? selectedTime.value;
     const startOfDay = refTime - (refTime % MILLISECONDS_PER_DAY) - selectedTimezoneOffset.value; 
@@ -123,7 +130,9 @@ export function useSun(options: UseSunOptions) {
     let time = startOfDay;
     // eslint-disable-next-line prefer-const
     let { altRad: sunAlt, decRad : sunDec }  = getSunPositionAtTime(new Date(time)); 
-    const circumstances =  meridionalAltitude(sunDec, locationRad.value.latitudeRad);
+    // when we correct for refraction and limb, the effect point we use for the meridional altitude changes
+    // in particular, it increases the upper and lower culmination
+    const circumstances =  meridionalAltitude(sunDec, locationRad.value.latitudeRad, extraDeg);
     let upperCulmination = circumstances.upperCulmination;
     let lowerCulmination = circumstances.lowerCulmination;
     
@@ -137,7 +146,20 @@ export function useSun(options: UseSunOptions) {
     } else if (always === 'down') {
       return { rising: null, setting: null,  always: always };
     } 
-
+    
+    // if it culminates 
+    if (upperCulmination * R2S < 2 && always === null) {
+      console.error(`Upper culmination is too close to the horizon = ${upperCulmination * R2S} arcsec.`);
+      return { rising: null, setting: null, always: 'down' };
+    }
+    
+    if (lowerCulmination * R2S > -2 && always === null) {
+      console.error(`Lower culmination is too close to the horizon = ${lowerCulmination * R2S} arcsec.`);
+      return { rising: null, setting: null, always: 'up' };
+    }
+    
+    console.log(`Upper culmination: ${upperCulmination * R2S} arcsec`);
+    console.log(`Lower culmination: ${lowerCulmination * R2S} arcsec`);
     // find the two times it crosses the given altitude
     while ((sunAlt < altDeg * D2R) && (time < endOfDay)) {
       time += MILLISECONDS_PER_INTERVAL;
@@ -156,12 +178,24 @@ export function useSun(options: UseSunOptions) {
     interp = () =>_interpolateSunAltitude(time, MILLISECONDS_PER_INTERVAL, altDeg);
     const setting = time >= endOfDay ? null : interp();
     
-    // check some of the edge cases. 
-    // we can't check if lower culmination is above altDeg if the sun never sets
-    // because we don't always scan the whole day
+    // check some of the edge cases and log errors
+    // always = null implies that it truly rises and sets
     if (always === null ) {
+      // if either is null, that means we could not detect it.
       if (rising === null || setting === null) {
-        console.error("Error calculating sun rise/set times", `Upper culmination: ${upperCulmination / D2R}, Lower culmination: ${lowerCulmination / D2R}, Desired alt: ${altDeg}`);
+        console.error(
+          "Error calculating sun rise/set times", 
+          `Rising: ${rising}, Setting: ${setting}.`,
+          `Upper culmination: ${upperCulmination / D2R}, Lower culmination: ${lowerCulmination / D2R}, 
+          Desired alt: ${altDeg}`);
+        // we can't trust the results. if the upper culmination is small, then it's always down
+        // if the lower culmination is small, then it's always up
+        always = Math.abs(upperCulmination) < Math.abs(lowerCulmination) ? 'down' : 'up';
+        return {
+          'rising': null,
+          'setting': null,
+          'always': always,
+        };
       }
     }
     return {
