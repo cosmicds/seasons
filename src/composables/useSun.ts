@@ -59,8 +59,8 @@ export function useSun(options: UseSunOptions) {
       decRad: sunPlace.get_dec() * D2R,
     } as EquatorialRad;
   });
-
-interface SunPos extends AltAzRad {
+  
+  interface SunPos extends AltAzRad {
     decRad: number;
     raRad: number;
   }
@@ -96,7 +96,7 @@ interface SunPos extends AltAzRad {
     const alwaysBelow = Math.abs(sunDec - latitude) > 90 * D2R;
     return {upperCulmination, lowerCulmination, always: (alwaysAbove ? 'up' :  (alwaysBelow ? 'down' : null)) };
   }
-
+  
   // function that finds at what time the center of the sun will reach a given altitude during the current day to within 15 minutes
   interface SunAltOptions {
     useLimb?: boolean;
@@ -127,15 +127,16 @@ interface SunPos extends AltAzRad {
     let upperCulmination = circumstances.upperCulmination;
     let lowerCulmination = circumstances.lowerCulmination;
     
+    // eslint-disable-next-line prefer-const
     let always: 'up' | 'down' | null = circumstances.always as ('up' | 'down' | null);
     
     // if the sign a 0.6 days later is the same, then the sun either never rises or never sets
     // don't short circuit because timezones mess up the time. you would have to correct to solar
     if (always === 'up') {
-        return { rising: null, setting: null, always: always };
+      return { rising: null, setting: null, always: always };
     } else if (always === 'down') {
-        return { rising: null, setting: null,  always: always };
-    }
+      return { rising: null, setting: null,  always: always };
+    } 
 
     // find the two times it crosses the given altitude
     while ((sunAlt < altDeg * D2R) && (time < endOfDay)) {
@@ -154,7 +155,15 @@ interface SunPos extends AltAzRad {
     }
     interp = () =>_interpolateSunAltitude(time, MILLISECONDS_PER_INTERVAL, altDeg);
     const setting = time >= endOfDay ? null : interp();
-
+    
+    // check some of the edge cases. 
+    // we can't check if lower culmination is above altDeg if the sun never sets
+    // because we don't always scan the whole day
+    if (always === null ) {
+      if (rising === null || setting === null) {
+        console.error("Error calculating sun rise/set times", `Upper culmination: ${upperCulmination / D2R}, Lower culmination: ${lowerCulmination / D2R}, Desired alt: ${altDeg}`);
+      }
+    }
     return {
       'rising': (rising !== null && setting !== null) ? Math.min(rising, setting) : rising,
       'setting': (rising !== null && setting !== null) ? Math.max(rising, setting) : setting,
