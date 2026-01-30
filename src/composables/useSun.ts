@@ -95,7 +95,6 @@ export function useSun(options: UseSunOptions) {
     const alt1 = getSunPositionAtTime(new Date(time - step)).altRad;
     const alt2 = getSunPositionAtTime(new Date(time + step)).altRad;
     const out =  lerp(alt1, time - step, alt2, time + step, desiredAltDeg * D2R);
-    console.log("Interpolating sun altitude");
     return out;
   }
   
@@ -222,7 +221,7 @@ export function useSun(options: UseSunOptions) {
         return { 'rising': null, 'setting': null, 'always': 'up',};
       }
       
-      console.log(`Found setting time at ${setting ? new Date(setting).toLocaleString(undefined, { timeZone: 'UTC' }) : 'null'}`);
+      console.log(`Found setting time at ${setting ? new Date(setting).toLocaleString(undefined, { timeZone: 'UTC' }) : 'null'} UTC`);
       endOfDay = time + MILLISECONDS_PER_DAY; //  startOfDay + 24 hours < endOfDay < startOfDay + 48 hours
       
       const r = searchRise(s.time);
@@ -233,7 +232,7 @@ export function useSun(options: UseSunOptions) {
         return { 'rising': null, 'setting': setting, 'always': 'down',};
       }
       
-      console.log(`Found rising time at ${rising ? new Date(rising).toLocaleString(undefined, { timeZone: 'UTC' }) : 'null'}`);
+      console.log(`Found rising time at ${rising ? new Date(rising).toLocaleString(undefined, { timeZone: 'UTC' }) : 'null'} UTC`);
       endOfDay += r.time + MILLISECONDS_PER_DAY; // startOfDay + 24 hours < endOfDay < startOfDay + 48 hours
       const s2 = searchSet(r.time);
       if (s2.setting === null) {
@@ -241,7 +240,7 @@ export function useSun(options: UseSunOptions) {
         return { 'rising': rising, 'setting': null, 'always': 'up',};
       }
       setting = s2.setting;
-      console.log(`Found and using next setting time at ${setting ? new Date(setting).toLocaleString(undefined, { timeZone: 'UTC' }) : 'null'}`);
+      console.log(`Found and using next setting time at ${setting ? new Date(setting).toLocaleString(undefined, { timeZone: 'UTC' }) : 'null'} UTC`);
       
     } else {
       console.error("Sun is going down and is below the horizon. Search for the next rise and extend to next day for setting.");
@@ -252,7 +251,7 @@ export function useSun(options: UseSunOptions) {
         return { 'rising': null, 'setting': null, 'always': 'down',};
       }
       
-      console.log(`Found rising time at ${rising ? new Date(rising).toLocaleString(undefined, { timeZone: 'UTC' }) : 'null'}`);
+      console.log(`Found rising time at ${rising ? new Date(rising).toLocaleString(undefined, { timeZone: 'UTC' }) : 'null'} UTC`);
       endOfDay += time + MILLISECONDS_PER_DAY; // startOfDay + 24 hours < endOfDay < startOfDay + 48 hours
       
       const s = searchSet(r.time);
@@ -263,7 +262,7 @@ export function useSun(options: UseSunOptions) {
         return { 'rising': rising, 'setting': null, 'always': 'up',};
       }
       
-      console.log(`Found setting time at ${setting ? new Date(setting).toLocaleString(undefined, { timeZone: 'UTC' }) : 'null'}`);
+      console.log(`Found setting time at ${setting ? new Date(setting).toLocaleString(undefined, { timeZone: 'UTC' }) : 'null'} UTC`);
     }
     
     
@@ -290,8 +289,8 @@ export function useSun(options: UseSunOptions) {
       }
     }
     console.log(`Rise and Set from the search`);
-    console.log("   Rising time:", rising ? new Date(rising).toLocaleString(undefined, { timeZone: 'UTC' }) : 'null');
-    console.log("   Setting time:", setting ? new Date(setting).toLocaleString(undefined, { timeZone: 'UTC' }) : 'null');
+    console.log("   Rising time:", rising ? new Date(rising).toLocaleString(undefined, { timeZone: 'UTC' }) : 'null', ' UTC');
+    console.log("   Setting time:", setting ? new Date(setting).toLocaleString(undefined, { timeZone: 'UTC' }) : 'null',' UTC');
     return {
       'rising': rising,
       'setting': setting,
