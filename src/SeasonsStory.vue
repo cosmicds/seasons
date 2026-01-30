@@ -267,13 +267,6 @@
           </template>
         </v-slider>
 
-        <daylight-pie-chart
-          :rise="startTime"
-          :set="endTime"
-          :always="sunAlways"
-          :timezone-offset="selectedTimezoneOffset"
-        />
-
         <div class="time-chips">
           <v-chip
             @click="() => {
@@ -316,6 +309,7 @@
       
       <!-- eslint-disable-next-line vue/no-v-model-argument -->
       <speed-control
+        v-if="!smallSize"
         :model-value="playing" 
         :store="store"
         :color="accentColor" 
@@ -342,6 +336,30 @@
           wwtStats.rateSelections.push(rate);
         }"
         />
+      <icon-button
+        v-else
+        id="play-pause"
+        :icon="playing ? 'pause' : 'play'"
+        @activate="() => {
+          playing = !playing;
+          store.setClockRate(playing ? 1000 : 0);
+          store.setClockSync(playing);
+          handlePlaying(playing);
+        }"
+        :tooltip-text="playing ? 'Pause' : 'Play'"
+        tooltip-offset="5px"
+        show-tooltip
+        :color="accentColor"
+        :focus-color="accentColor"
+      ></icon-button>
+      <daylight-pie-chart
+        v-if="smallSize"
+        :rise="startTime"
+        :set="endTime"
+        :always="sunAlways"
+        size="50px"
+        :timezone-offset="selectedTimezoneOffset"
+      />
       <div id="change-flags">
       <!--
         <icon-button
@@ -1066,7 +1084,7 @@ function updateSliderBounds(_newLocation: LocationDeg, oldLocation: LocationDeg)
   store.setTime(new Date(newSelectedTime));
 }
 
-function handlePlaying( _playing ) {
+function handlePlaying(setPlaying: boolean) {
   if(forceCamera.value) {
     resetView(MAX_ZOOM);
   }
@@ -1076,7 +1094,7 @@ function handlePlaying( _playing ) {
     return;
   }  
 
-  playing.value = _playing;
+  playing.value = setPlaying;
   wwtStats.playPauseCount += 1;
 }
 
@@ -1980,7 +1998,7 @@ video {
 }
 
 #time-slider-chips {
-  width: 90%;
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
   padding-left: 3rem;

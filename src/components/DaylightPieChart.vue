@@ -14,7 +14,7 @@ interface Props {
   nightColor?: string;
   rise: number;
   set: number;
-  size?: number;
+  size?: string;
   always?: "up" | "down" | null;
   timezoneOffset?: number;
 }
@@ -22,7 +22,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   dayColor: "#ffdf22",
   nightColor: "#191970",
-  size: 100,
+  size: "100px",
   timezoneOffset: 0,
   always: null,
 });
@@ -39,7 +39,7 @@ const cssVars = computed(() => ({
   "--rise-angle": `${riseAngle.value.toFixed(2)}turn`,
   "--day-color": props.dayColor,
   "--night-color": props.nightColor,
-  "--size": `${props.size}px`,
+  "--size": props.size,
   "--background":
       props.always == "up" ? props.dayColor :
         (props.always == "down" ? props.nightColor :

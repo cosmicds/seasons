@@ -35,6 +35,8 @@ import {
   faXmark,
   faInfo,
   faMagnifyingGlass,
+  faPlay,
+  faPause,
   faCalendarDay,
 } from "@fortawesome/free-solid-svg-icons";
 
@@ -46,6 +48,8 @@ library.add(faVideo);
 library.add(faXmark);
 library.add(faInfo);
 library.add(faMagnifyingGlass);
+library.add(faPlay);
+library.add(faPause);
 library.add(faCalendarDay);
 
 /** v-hide directive taken from https://www.ryansouthgate.com/2020/01/30/vue-js-v-hide-element-whilst-keeping-occupied-space/ */
