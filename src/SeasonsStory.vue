@@ -2103,8 +2103,8 @@ video {
   right: 0.5em;
   bottom: 0.1em;
 
-  img {
-    height: 32px;
+  #logo-credits img {
+    height: 32px !important;
   }
 
   @media (max-height: 599px) {
