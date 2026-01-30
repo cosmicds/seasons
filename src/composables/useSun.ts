@@ -124,7 +124,8 @@ export function useSun(options: UseSunOptions) {
     
     const refTime = referenceTime ?? selectedTime.value;
     const startOfDay = refTime - (refTime % MILLISECONDS_PER_DAY) - selectedTimezoneOffset.value; 
-    const endOfDay = startOfDay + MILLISECONDS_PER_DAY - 1;
+    let endOfDay = startOfDay + MILLISECONDS_PER_DAY - 1;
+    
     
     // let's begin search at the start of the day
     let time = startOfDay;
@@ -135,6 +136,11 @@ export function useSun(options: UseSunOptions) {
     const circumstances =  meridionalAltitude(sunDec, locationRad.value.latitudeRad, extraDeg);
     let upperCulmination = circumstances.upperCulmination;
     let lowerCulmination = circumstances.lowerCulmination;
+    
+    console.log(`Upper culmination: ${upperCulmination * R2S} arcsec`);
+    console.log(`Lower culmination: ${lowerCulmination * R2S} arcsec`);
+
+    
     
     // eslint-disable-next-line prefer-const
     let always: 'up' | 'down' | null = circumstances.always as ('up' | 'down' | null);
@@ -158,8 +164,7 @@ export function useSun(options: UseSunOptions) {
       return { rising: null, setting: null, always: 'up' };
     }
     
-    console.log(`Upper culmination: ${upperCulmination * R2S} arcsec`);
-    console.log(`Lower culmination: ${lowerCulmination * R2S} arcsec`);
+    function searchRise(time) {
     // find the two times it crosses the given altitude
     while ((sunAlt < altDeg * D2R) && (time < endOfDay)) {
       time += MILLISECONDS_PER_INTERVAL;
@@ -167,16 +172,101 @@ export function useSun(options: UseSunOptions) {
       upperCulmination = Math.max(upperCulmination, sunAlt);
       lowerCulmination = Math.min(lowerCulmination, sunAlt);
     }
-    let interp = () => _interpolateSunAltitude(time, MILLISECONDS_PER_INTERVAL, altDeg);
+      const interp = () => _interpolateSunAltitude(time, MILLISECONDS_PER_INTERVAL, altDeg);
     const rising = time >= endOfDay ? null : interp();
+      return {rising, time};
+    }
+    function searchSet(time) {
+      let doOnce = true;
     while ((sunAlt > altDeg * D2R) && (time < endOfDay)) {
       time += MILLISECONDS_PER_INTERVAL;
       sunAlt = getSunPositionAtTime(new Date(time)).altRad;
       upperCulmination = Math.max(upperCulmination, sunAlt);
       lowerCulmination = Math.min(lowerCulmination, sunAlt);
-    }
-    interp = () =>_interpolateSunAltitude(time, MILLISECONDS_PER_INTERVAL, altDeg);
+        // if we wrap to the next day, log it
+        if (doOnce && time >= startOfDay + MILLISECONDS_PER_DAY) {
+          console.error("Extending search to next day");
+          doOnce = false;
+        }
+      }
+      const interp = () =>_interpolateSunAltitude(time, MILLISECONDS_PER_INTERVAL, altDeg);
     const setting = time >= endOfDay ? null : interp();
+      return {setting, time};
+    }
+      
+    const sunGoingUp = getSunPositionAtTime(new Date(time)).altRad < getSunPositionAtTime(new Date(time + MILLISECONDS_PER_INTERVAL / 2)).altRad;
+    let rising: number | null = null;
+    let setting: number | null = null;
+    
+    if (sunGoingUp) { // The sun is going up at midnight
+      console.log("At local midnight, the sun is going up.");
+      if (sunAlt > 0) {
+        console.error("However, the sun is already above the horizon at local midnight. This could be an edge case.");
+      }
+    } else {
+      console.log("At local midnight, the sun is going down.");
+      if (sunAlt < 0) {
+        console.log("and the sun is below the horizon");
+      } else {
+        console.error("but the sun is above the horizon");
+      }
+    }
+    
+    if (sunAlt >= 0 )  { // the sun is already up and the next thing to happen is setting
+      console.error("Sun is above the horizon at local midnight. Searching for setting first.");
+      const s = searchSet(time); // we look for it to set.
+      setting = s.setting;
+      if (setting === null) {
+        console.log("Error: could not find setting time when sun is going up first and above the horizon.");
+        return { 'rising': null, 'setting': null, 'always': 'up',};
+      }
+      
+      console.log(`Found setting time at ${setting ? new Date(setting).toLocaleString(undefined, { timeZone: 'UTC' }) : 'null'}`);
+      endOfDay = time + MILLISECONDS_PER_DAY; //  startOfDay + 24 hours < endOfDay < startOfDay + 48 hours
+      
+      const r = searchRise(s.time);
+      rising = r.rising;
+      
+      if (rising === null) {
+        console.error("The sun set this day, but did not rise in the next 24 hours. Setting to always down.");
+        return { 'rising': null, 'setting': setting, 'always': 'down',};
+      }
+      
+      console.log(`Found rising time at ${rising ? new Date(rising).toLocaleString(undefined, { timeZone: 'UTC' }) : 'null'}`);
+      endOfDay += r.time + MILLISECONDS_PER_DAY; // startOfDay + 24 hours < endOfDay < startOfDay + 48 hours
+      const s2 = searchSet(r.time);
+      if (s2.setting === null) {
+        console.error("Error: could not find second setting time after rising. Must be entering polar day.");
+        return { 'rising': rising, 'setting': null, 'always': 'up',};
+      }
+      setting = s2.setting;
+      console.log(`Found and using next setting time at ${setting ? new Date(setting).toLocaleString(undefined, { timeZone: 'UTC' }) : 'null'}`);
+      
+    } else {
+      console.error("Sun is going down and is below the horizon. Search for the next rise and extend to next day for setting.");
+      const r = searchRise(time);
+      rising = r.rising; 
+      if (rising === null) {
+        console.error("The sun never rose in 24 hours. It is always down for this date.");
+        return { 'rising': null, 'setting': null, 'always': 'down',};
+      }
+      
+      console.log(`Found rising time at ${rising ? new Date(rising).toLocaleString(undefined, { timeZone: 'UTC' }) : 'null'}`);
+      endOfDay += time + MILLISECONDS_PER_DAY; // startOfDay + 24 hours < endOfDay < startOfDay + 48 hours
+      
+      const s = searchSet(r.time);
+      setting = s.setting;
+      
+      if (setting === null) {
+        console.error("The sun rose this day, but did not set in the next 24 hours. We are entering polar day.");
+        return { 'rising': rising, 'setting': null, 'always': 'up',};
+      }
+      
+      console.log(`Found setting time at ${setting ? new Date(setting).toLocaleString(undefined, { timeZone: 'UTC' }) : 'null'}`);
+    }
+    
+    
+    
     
     // check some of the edge cases and log errors
     // always = null implies that it truly rises and sets
@@ -198,9 +288,12 @@ export function useSun(options: UseSunOptions) {
         };
       }
     }
+    console.log(`Rise and Set from the search`);
+    console.log("   Rising time:", rising ? new Date(rising).toLocaleString(undefined, { timeZone: 'UTC' }) : 'null');
+    console.log("   Setting time:", setting ? new Date(setting).toLocaleString(undefined, { timeZone: 'UTC' }) : 'null');
     return {
-      'rising': (rising !== null && setting !== null) ? Math.min(rising, setting) : rising,
-      'setting': (rising !== null && setting !== null) ? Math.max(rising, setting) : setting,
+      'rising': rising,
+      'setting': setting,
       'always': always,
     };
   }

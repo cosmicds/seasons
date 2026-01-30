@@ -1116,8 +1116,8 @@ const selectedLocation = ref<LocationDeg>({
 });
 
 function createQueryUrl(): string {
-  const lat = selectedLocation.value.latitudeDeg.toFixed(4);
-  const lon = selectedLocation.value.longitudeDeg.toFixed(4);
+  const lat = `${selectedLocation.value.latitudeDeg}`;
+  const lon = `${selectedLocation.value.longitudeDeg}`;
   const params = new URLSearchParams(window.location.search);
   params.set("lat", lat);
   params.set("lon", lon);
