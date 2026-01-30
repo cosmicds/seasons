@@ -133,7 +133,7 @@ export function useSun(options: UseSunOptions) {
     let { altRad: sunAlt, decRad : sunDec }  = getSunPositionAtTime(new Date(time)); 
     // when we correct for refraction and limb, the effect point we use for the meridional altitude changes
     // in particular, it increases the upper and lower culmination
-    const circumstances =  meridionalAltitude(sunDec, locationRad.value.latitudeRad, extraDeg);
+    const circumstances =  meridionalAltitude(sunDec, locationRad.value.latitudeRad, extraDeg * D2R);
     let upperCulmination = circumstances.upperCulmination;
     let lowerCulmination = circumstances.lowerCulmination;
     
@@ -200,19 +200,19 @@ export function useSun(options: UseSunOptions) {
     
     if (sunGoingUp) { // The sun is going up at midnight
       console.log("At local midnight, the sun is going up.");
-      if (sunAlt > 0) {
+      if (sunAlt > altDeg * D2R) {
         console.error("However, the sun is already above the horizon at local midnight. This could be an edge case.");
       }
     } else {
       console.log("At local midnight, the sun is going down.");
-      if (sunAlt < 0) {
+      if (sunAlt < altDeg * D2R) {
         console.log("and the sun is below the horizon");
       } else {
         console.error("but the sun is above the horizon");
       }
     }
     
-    if (sunAlt >= 0 )  { // the sun is already up and the next thing to happen is setting
+    if (sunAlt >= altDeg * D2R )  { // the sun is already up and the next thing to happen is setting
       console.error("Sun is above the horizon at local midnight. Searching for setting first.");
       const s = searchSet(time); // we look for it to set.
       setting = s.setting;
