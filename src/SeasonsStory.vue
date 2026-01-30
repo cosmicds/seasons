@@ -133,6 +133,17 @@
             hide-details
           />
         </div>
+        <!-- go to sun -->
+        <icon-button
+          v-if="false"
+          @activate="goToSun"
+          icon="fa-sun"
+          :color="accentColor"
+          :tooltip-text="'Go to Sun'"
+          tooltip-location="start"
+          size="sm"
+        >
+      </icon-button>
         <icon-button
           v-model="showTextSheet"
           icon="fa-info"
@@ -267,7 +278,7 @@
             size="x-small"
             class="time-chip"
           >
-            Sunrise
+            {{ (currentDayInfo[2].sunAlwaysDown || currentDayInfo[2].sunAlwaysUp) ?  'Midnight' : 'Sunrise' }}
           </v-chip>
           <v-chip
             @click="() => {
@@ -291,7 +302,7 @@
             size="x-small"
             class="time-chip"
           >
-            Sunset
+            {{ (currentDayInfo[2].sunAlwaysDown || currentDayInfo[2].sunAlwaysUp) ?  'Midnight' : 'Sunset' }}
           </v-chip>
         </div>
       </div>
@@ -983,26 +994,37 @@ function formatDayLength(milliseconds: number, polarInfo: { sunAlwaysUp: boolean
   return `${hours}h ${minutes}m`;
 }
 
+function goToSun() {
+  const sunPos = getSunPositionAtTime(currentTime.value);
+  const radec = horizontalToEquatorial(
+    sunPos.altRad, 
+    sunPos.azRad, 
+    selectedLocation.value.latitudeDeg * D2R,
+    selectedLocation.value.longitudeDeg * D2R,  
+    currentTime.value
+  );
+  store.gotoRADecZoom({
+    ...radec,
+    zoomDeg: Math.min(store.zoomDeg, 180),
+    instant: false,
+  });
+}
 function getStartAndEndTimes(day: Date): [Date, Date, { sunAlwaysUp: boolean; sunAlwaysDown: boolean }] {
   const time = day.getTime();
-  const { rising: dayStart, setting: dayEnd } = getTimeforSunAlt(0, time);
+  const { rising: dayStart, setting: dayEnd, always } = getTimeforSunAlt(0, time);
 
   let start: Date;
   let end: Date;
-  let sunAlwaysUp = false;
-  let sunAlwaysDown = false;
+  const sunAlwaysUp = always === 'up';
+  const sunAlwaysDown = always === 'down';
 
   if (dayStart === null || dayEnd === null) {
+    console.log("Polar day or night detected");
+    // moved checking for polar day/night to useSun
     
-    // Check if the sun is always above or always below the horizon
-    const noonTime = time - (time % (24 * 60 * 60 * 1000)) - selectedTimezoneOffset.value + 12 * 60 * 60 * 1000;
-    const noonSun = getSunPositionAtTime(new Date(noonTime));
-    
-    if (noonSun.altRad > 0) {
-      sunAlwaysUp = true;
-    } else {
-      sunAlwaysDown = true;
-    }
+    // It don't know if it really make sense to have the slider go 
+    // from 00:00 to 23:59 when for both polar night and noon
+    //  But I think that is the only choice we have
     // utcMidnight = time - (time % (24 * 60 * 60 * 1000))
     // localMidnight = utcMidnight - timezone offset
     const localMidnight = time - (time % (24 * 60 * 60 * 1000)) - selectedTimezoneOffset.value;
@@ -1012,7 +1034,7 @@ function getStartAndEndTimes(day: Date): [Date, Date, { sunAlwaysUp: boolean; su
     start = new Date(dayStart);
     end = new Date(dayEnd);
   }
-  
+
   return [start, end, { sunAlwaysUp, sunAlwaysDown }];
 }
 
@@ -1077,11 +1099,33 @@ const wwtStats = markRaw({
   startTime: Date.now(),
 });
 
+// get lat and lon url query parameters for initial location
+const urlParams = new URLSearchParams(window.location.search);
+const urlLat = urlParams.get("lat");
+const urlLon = urlParams.get("lon");
+let initialLat: number = 42.3581;
+let initialLon: number = -71.1056;
+if (urlLat && urlLon) {
+  initialLat = parseFloat(urlLat);
+  initialLon = parseFloat(urlLon);
+}
 const selectedLocation = ref<LocationDeg>({
-  longitudeDeg: -71.1056,
-  latitudeDeg: 42.3581,
+  longitudeDeg: initialLon,
+  latitudeDeg: initialLat,
   // latitudeDeg: 72.40 // test polar latitude
 });
+
+function createQueryUrl(): string {
+  const lat = `${selectedLocation.value.latitudeDeg}`;
+  const lon = `${selectedLocation.value.longitudeDeg}`;
+  const params = new URLSearchParams(window.location.search);
+  params.set("lat", lat);
+  params.set("lon", lon);
+  return `${window.location.origin}/?${params.toString()}`;
+}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(window as any).createQueryUrl = createQueryUrl;
+
 const selectedLocationInfo = ref<LocationInfo>({ name: "", latitude: "", longitude: "" });
 const searchErrorMessage = ref<string | null>(null);
 const geocodingOptions = {
@@ -1428,7 +1472,7 @@ function doWWTModifications() {
     // Only scale the Sun (index 0)
     // Use smaller scale (1) during polar night, normal scale (4) otherwise
     const polarInfo = currentDayInfo.value[2];
-    Planets._planetScales[0] = polarInfo.sunAlwaysDown ? 1 : 4;
+    Planets._planetScales[0] = Planets._planetScales[0] * (polarInfo.sunAlwaysDown ? 1 : 4);
   }
   Planets.updatePlanetLocations = newUpdatePlanetLocations;
   Planets.drawPlanets = drawPlanets;
@@ -2059,8 +2103,8 @@ video {
   right: 0.5em;
   bottom: 0.1em;
 
-  img {
-    height: 32px;
+  #logo-credits img {
+    height: 32px !important;
   }
 
   @media (max-height: 599px) {
