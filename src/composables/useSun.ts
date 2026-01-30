@@ -1,3 +1,4 @@
+/* eslint-disable prefer-const */
 import { Ref, ref, computed, isRef, type MaybeRef } from "vue";
 import { Classification, SolarSystemObjects } from "@wwtelescope/engine-types";
 import { Place} from "@wwtelescope/engine";
@@ -166,23 +167,23 @@ export function useSun(options: UseSunOptions) {
     
     function searchRise(time) {
     // find the two times it crosses the given altitude
-    while ((sunAlt < altDeg * D2R) && (time < endOfDay)) {
-      time += MILLISECONDS_PER_INTERVAL;
-      sunAlt = getSunPositionAtTime(new Date(time)).altRad;
-      upperCulmination = Math.max(upperCulmination, sunAlt);
-      lowerCulmination = Math.min(lowerCulmination, sunAlt);
-    }
+      while ((sunAlt < altDeg * D2R) && (time < endOfDay)) {
+        time += MILLISECONDS_PER_INTERVAL;
+        sunAlt = getSunPositionAtTime(new Date(time)).altRad;
+        upperCulmination = Math.max(upperCulmination, sunAlt);
+        lowerCulmination = Math.min(lowerCulmination, sunAlt);
+      }
       const interp = () => _interpolateSunAltitude(time, MILLISECONDS_PER_INTERVAL, altDeg);
-    const rising = time >= endOfDay ? null : interp();
+      const rising = time >= endOfDay ? null : interp();
       return {rising, time};
     }
     function searchSet(time) {
       let doOnce = true;
-    while ((sunAlt > altDeg * D2R) && (time < endOfDay)) {
-      time += MILLISECONDS_PER_INTERVAL;
-      sunAlt = getSunPositionAtTime(new Date(time)).altRad;
-      upperCulmination = Math.max(upperCulmination, sunAlt);
-      lowerCulmination = Math.min(lowerCulmination, sunAlt);
+      while ((sunAlt > altDeg * D2R) && (time < endOfDay)) {
+        time += MILLISECONDS_PER_INTERVAL;
+        sunAlt = getSunPositionAtTime(new Date(time)).altRad;
+        upperCulmination = Math.max(upperCulmination, sunAlt);
+        lowerCulmination = Math.min(lowerCulmination, sunAlt);
         // if we wrap to the next day, log it
         if (doOnce && time >= startOfDay + MILLISECONDS_PER_DAY) {
           console.error("Extending search to next day");
@@ -190,7 +191,7 @@ export function useSun(options: UseSunOptions) {
         }
       }
       const interp = () =>_interpolateSunAltitude(time, MILLISECONDS_PER_INTERVAL, altDeg);
-    const setting = time >= endOfDay ? null : interp();
+      const setting = time >= endOfDay ? null : interp();
       return {setting, time};
     }
       
