@@ -9,6 +9,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import { dayFractionForTimestamp } from "../utils";
+
 interface Props {
   dayColor?: string;
   nightColor?: string;
@@ -27,12 +29,8 @@ const props = withDefaults(defineProps<Props>(), {
   always: null,
 });
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-function fractionForTime(time: number): number {
-  return (time % MS_PER_DAY) / MS_PER_DAY;
-}
-const riseAngle = computed(() => fractionForTime(props.rise + props.timezoneOffset));
-const daylightPercentage = computed(() => fractionForTime(props.set - props.rise));
+const riseAngle = computed(() => dayFractionForTimestamp(props.rise + props.timezoneOffset));
+const daylightPercentage = computed(() => dayFractionForTimestamp(props.set - props.rise));
 
 const cssVars = computed(() => ({
   "--daylight-amount": `${(100 * daylightPercentage.value).toFixed(0)}%`,

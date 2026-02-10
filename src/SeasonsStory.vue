@@ -763,7 +763,6 @@ const startAzOffset = ref(40 * D2R);
 const endAzOffset = ref(-startAzOffset.value);
 const azOffsetSlope = computed(() => (endAzOffset.value - startAzOffset.value) / (endTime.value - startTime.value));
 
-
 const sunDistance = ref(sunPlace.get_distance());
 
 // Get the next 4 "dates of interest"
@@ -1350,6 +1349,7 @@ const cssVars = computed(() => {
   return {
     "--accent-color": accentColor.value,
     "--app-content-height": showTextSheet.value ? "66%" : "100%",
+    "--time-slider-width": smallSize.value ? "100%": "50%",
   };
 });
 
