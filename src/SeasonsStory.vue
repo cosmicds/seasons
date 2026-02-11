@@ -259,6 +259,7 @@
           :max="sliderMax"
           thumb-label="always"
           class="time-slider"
+          @end="onTimeSliderEnd"
         >
           <template v-slot:thumb-label>
             <div class="thumb-label">
@@ -272,6 +273,7 @@
             @click="() => {
               sliderValue = sliderMin;
               resetView(MAX_ZOOM);
+              events.push('sunrise');
             }"
             :color="accentColor"
             variant="elevated"
@@ -284,6 +286,7 @@
             @click="() => {
               sliderValue = (sliderMin + sliderMax) / 2;
               resetView(MAX_ZOOM);
+              events.push('midday');
             }"
             :color="accentColor"
             variant="elevated"
@@ -296,6 +299,7 @@
             @click="() => {
               sliderValue = sliderMax;
               resetView(MAX_ZOOM);
+              events.push('sunset');
             }"
             :color="accentColor"
             variant="elevated"
@@ -320,19 +324,24 @@
         @reset="() => {
           selectedEvent && goToEvent(selectedEvent);
           wwtStats.timeResetCount += 1;
+          events.push('wwt_time_reset');
         }"
         @update:reverse="(_reverse: boolean) => {
           wwtStats.reverseCount += 1;
+          events.push('wwt_reverse');
         }"
         @update:model-value="handlePlaying"
         @slow-down="(rate: number) => {
           wwtStats.slowdowns.push(rate);
+          events.push(`wwt_slowdown ${rate}`);
         }"
         @speed-up="(rate: number) => {
           wwtStats.speedups.push(rate);
+          events.push(`wwt_speedup ${rate}`);
         }"
         @set-rate="(rate: number) => {
           wwtStats.rateSelections.push(rate);
+          events.push(`wwt_rate ${rate}`);
         }"
         />
       <div id="change-flags">
@@ -349,6 +358,7 @@
           size="1.2em"
         >
         </icon-button>
+      -->
         <icon-button
           icon="mdi-lock"
           @activate="() => showPrivacyDialog = true"
@@ -361,7 +371,18 @@
           size="1.2em"
         >
         </icon-button>
-      -->
+        <icon-button
+          icon="mdi-help"
+          @activate="showQuestion = true"
+          :color="accentColor"
+          :focus-color="accentColor"
+          tooltip-text="Share your thoughts"
+          tooltip-location="bottom"
+          tooltip-offset="5px"
+          :show-tooltip="!mobile"
+          size="1.2em"
+        >
+        </icon-button>
       </div>
     </div>
     <div id="body-logos" v-if="!smallSize">
@@ -662,6 +683,70 @@
       </v-card>
     </v-dialog>
 
+    <!-- Data collection opt-out dialog -->
+    <v-dialog
+      scrim="false"
+      v-model="showPrivacyDialog"
+      max-width="400px"
+      id="privacy-popup-dialog"
+    >
+      <v-card>
+        <v-card-text>
+          To evaluate usage of this app, <strong>anonymized</strong> data may be collected, including user feedback and locations searched or selected on map. Places selected via geolocation services on your device are NOT collected.
+        </v-card-text>
+        <v-card-actions class="pt-3">
+          <v-spacer></v-spacer>
+          <v-btn
+            color="#BDBDBD"
+            href="https://www.cfa.harvard.edu/privacy-statement"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+          Privacy Policy
+          </v-btn>
+          <v-btn
+            color="#ff6666"
+            @click="() => {
+              responseOptOut = true;
+              showPrivacyDialog = false;
+            }"
+          >
+          Opt out
+          </v-btn>
+          <v-btn 
+            color="green"
+            @click="() => {
+              responseOptOut = false;
+              showPrivacyDialog = false;
+            }"
+          >
+            Allow
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-expand-transition>
+      <question-dialog
+        v-show="showQuestion"
+        @dismiss="() => {
+          showQuestion = false;
+          if (!(responseOptOut || ahaOptOut)) {
+            setQuestionTimeout();
+          }
+        }"
+        @opt-out="() => {
+          showQuestion = false;
+          ahaOptOut = true;
+        }"
+        @finish="(response: string) => {
+          ahaMomentResponses.push(response);
+          showQuestion = false;
+        }"
+      >
+      </question-dialog>
+    </v-expand-transition>
+
   </div>
 </v-app>
 </template>
@@ -672,6 +757,7 @@ import { useDisplay } from "vuetify";
 import { storeToRefs } from "pinia";
 import { getTimezoneOffset } from "date-fns-tz";
 import tzlookup from "tz-lookup";
+import { v4 } from "uuid";
 
 import { AstroTime, Seasons } from "astronomy-engine";
 
@@ -686,6 +772,7 @@ import {
   useWWTKeyboardControls,
   D2R,
   R2D,
+  API_BASE_URL,
 } from "@cosmicds/vue-toolkit";
 import { MapBoxFeature, MapBoxFeatureCollection, geocodingInfoForSearch, textForLocation } from "@cosmicds/vue-toolkit/src/mapbox";
 
@@ -726,6 +813,8 @@ const sheet = ref<SheetType | null>(null);
 const layersLoaded = ref(false);
 const positionSet = ref(false);
 const forceCamera = ref(true);
+const showQuestion = ref(false);
+let questionTimeout: ReturnType<typeof setTimeout> | null = null;
 
 const tab = ref(0);
 
@@ -737,7 +826,6 @@ const showHorizon = ref(true);
 const startAzOffset = ref(40 * D2R);
 const endAzOffset = ref(-startAzOffset.value);
 const azOffsetSlope = computed(() => (endAzOffset.value - startAzOffset.value) / (endTime.value - startTime.value));
-
 
 const sunDistance = ref(sunPlace.get_distance());
 
@@ -1057,7 +1145,7 @@ function updateSliderBounds(_newLocation: LocationDeg, oldLocation: LocationDeg)
   store.setTime(new Date(newSelectedTime));
 }
 
-function handlePlaying( _playing ) {
+function handlePlaying(play: boolean) {
   if(forceCamera.value) {
     resetView(MAX_ZOOM);
   }
@@ -1067,8 +1155,9 @@ function handlePlaying( _playing ) {
     return;
   }  
 
-  playing.value = _playing;
+  playing.value = play;
   wwtStats.playPauseCount += 1;
+  events.push(play ? 'wwt_play' : 'wwt_pause');
 }
 
 function goToEvent(event: EventOfInterest) {
@@ -1133,13 +1222,11 @@ const geocodingOptions = {
   access_token: process.env.VUE_APP_MAPBOX_ACCESS_TOKEN ?? "", 
 };
 
-let userSelectedMapLocations: [number, number][] = [];
-let userSelectedSearchLocations: [number, number][] = [];
-
 function updateLocationFromMap(location: LocationDeg) {
   console.log("Updating location from map:", location);
   selectedLocation.value = location;
-  userSelectedMapLocations.push([location.latitudeDeg, location.longitudeDeg]);
+  userSelectedLocations.push([location.latitudeDeg, location.longitudeDeg]);
+  events.push(`location_update ${location.latitudeDeg} ${location.longitudeDeg}`);
 }
 
 function latText(latitudeDeg: number): string {
@@ -1190,11 +1277,12 @@ function setLocationFromFeature(feature: MapBoxFeature) {
   }).catch(_err => {
     searchErrorMessage.value = "An error occurred while searching";
   });
+  userSelectedLocations.push(feature.center);
+  events.push(`location_update ${feature.center[0]} ${feature.center[1]}`);
 }
 
 function setLocationFromSearchFeature(feature: MapBoxFeature) {
   setLocationFromFeature(feature);
-  userSelectedSearchLocations.push(feature.center);
 }
 
 async function updateSelectedLocationInfo() {
@@ -1204,12 +1292,6 @@ async function updateSelectedLocationInfo() {
 
 function searchProvider(text: string): Promise<MapBoxFeatureCollection> {
   return geocodingInfoForSearch(text, geocodingOptions);
-}
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function resetData() {
-  userSelectedMapLocations = [];
-  userSelectedSearchLocations = [];
 }
 
 const selectedTime = ref(Date.now());
@@ -1304,7 +1386,11 @@ onMounted(() => {
     // If there are layers to set up, do that here!
     positionSet.value = true;
     layersLoaded.value = true;
+
+    questionDisplaySetup();
   });
+
+  createUserEntry();
 });
 
 const ready = computed(() => layersLoaded.value && positionSet.value);
@@ -1316,7 +1402,7 @@ const inNorthernHemisphere = computed(() => selectedLocation.value.latitudeDeg >
 
 /* Properties related to device/screen characteristics */
 const smallSize = computed(() => smAndDown.value);
-// const mobile = computed(() => smallSize.value && touchscreen);
+const mobile = computed(() => smallSize.value && touchscreen);
 
 /* This lets us inject component data into element CSS */
 const cssVars = computed(() => {
@@ -1505,18 +1591,214 @@ watch(forceCamera, (value: boolean) => {
 });
 
 watch(selectedEvent, (event: EventOfInterest | null) => {
-  if (event) {
-    goToEvent(event);
+  if (!event) {
+    return;
   }
+
+  goToEvent(event);
+  const representation = event === "custom" ? `event_custom ${selectedCustomDate.value?.toISOString()}` : event as string;
+  userSelectedDates.push(representation);
+  events.push(representation);
 });
 
 watch(selectedCustomDate, (date: Date | null) => {
   if (date && selectedEvent.value === "custom") {
     goToEvent("custom");
+
+    const representation = `event_custom ${selectedCustomDate.value?.toISOString()}`;
+    userSelectedDates.push(representation);
+    events.push(representation);
   }
 });
 
 watch(inNorthernHemisphere, (_inNorth: boolean) => resetNSEWText());
+
+
+const STORY_DATA_URL = `${API_BASE_URL}/seasons/data`;
+const OPT_OUT_KEY = "seasons-optout" as const;
+const AHA_OPT_OUT_KEY = "seasons-aha-optout" as const;
+const UUID_KEY = "seasons-uuid" as const;
+const storedOptOut = window.localStorage.getItem(OPT_OUT_KEY);
+const storedAhaOptOut = window.localStorage.getItem(AHA_OPT_OUT_KEY);
+const maybeUUID = window.localStorage.getItem(UUID_KEY);
+const optOut = typeof storedOptOut === "string" ? storedOptOut === "true" : null;
+const responseOptOut = ref(optOut);
+const ahaOptOut = ref(typeof storedAhaOptOut === "string" ? storedAhaOptOut === "true" : null);
+const showPrivacyDialog = ref(false);
+const existingUser = maybeUUID !== null;
+const uuid = maybeUUID ?? v4();
+if (!existingUser) {
+  window.localStorage.setItem(UUID_KEY, uuid);
+}
+
+let timeSliderUsedCount = 0;
+let events: string[] = [];
+let userSelectedDates: string[] = [];
+let userSelectedLocations: [number, number][] = [];
+let ahaMomentResponses: string[] = [];
+let appStartTimestamp = Date.now();
+
+function onTimeSliderEnd(_value: number) {
+  timeSliderUsedCount += 1;
+  events.push("time_slider_used");
+}
+
+async function questionDisplaySetup() {
+  if (responseOptOut.value || ahaOptOut.value) {
+    return;
+  }
+
+  const existingDataResponse = await fetch(`${STORY_DATA_URL}/${uuid}`, {
+    method: "GET",
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    headers: { "Authorization": process.env.VUE_APP_CDS_API_KEY ?? "" }
+  });
+
+  const existingDataContent = await existingDataResponse.json();
+  const alreadyAnswered = existingDataResponse.status === 200 && existingDataContent.response.aha_moment_responses.length > 0;
+
+  if (alreadyAnswered) {
+    return;
+  }
+
+  setQuestionTimeout();
+}
+
+function setQuestionTimeout(timeout=4 * 60_000) {
+  questionTimeout = setTimeout(() => {
+    showQuestion.value = true;
+  }, timeout);
+}
+
+async function createUserEntry() {
+  if (responseOptOut.value) {
+    return;
+  }
+
+  const response = await fetch(`${STORY_DATA_URL}/${uuid}`, {
+    method: "GET",
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    headers: { "Authorization": process.env.VUE_APP_CDS_API_KEY ?? "" },
+  });
+  const content = await response.json();
+  const exists = response.status === 200 && content.response?.user_uuid != undefined;
+  if (exists) {
+    return;
+  }
+
+  fetch(`${STORY_DATA_URL}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      // eslint-disable-next-line @typescript-eslint/naming-convention
+      "Authorization": process.env.VUE_APP_CDS_API_KEY ?? "",
+    },
+    body: JSON.stringify({
+      // eslint-disable-next-line @typescript-eslint/naming-convention
+      user_uuid: uuid,
+    }),
+  });
+}
+
+function resetData() {
+  timeSliderUsedCount = 0;
+  events = [];
+  userSelectedDates = [];
+  userSelectedLocations = [];
+  ahaMomentResponses = [];
+  Object.assign(wwtStats, {
+    timeResetCount: 0,
+    reverseCount: 0,
+    playPauseCount: 0,
+    speedups: [],
+    slowdowns: [],
+    rateSelections: [],
+    startTime: selectedTime.value,
+  });
+
+  const now = Date.now();
+  appStartTimestamp = now;
+}
+
+function updateUserData() {
+  if (responseOptOut.value) {
+    return;
+  }
+
+  const now = Date.now();
+  const body = {
+    events,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    time_slider_used_count: timeSliderUsedCount,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    user_selected_dates: userSelectedDates,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    user_selected_locations: userSelectedLocations,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    app_time_ms: now - appStartTimestamp,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    wwt_time_reset_count: wwtStats.timeResetCount,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    wwt_reverse_count: wwtStats.reverseCount,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    wwt_play_pause_count: wwtStats.playPauseCount,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    wwt_speedups: wwtStats.speedups,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    wwt_slowdowns: wwtStats.slowdowns,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    wwt_rate_selections: wwtStats.rateSelections,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    wwt_start_stop_times: [wwtStats.startTime, selectedTime.value],
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    aha_moment_response: ahaMomentResponses,
+  } as Record<string, unknown>;
+  fetch(`${STORY_DATA_URL}/${uuid}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      // eslint-disable-next-line @typescript-eslint/naming-convention
+      "Authorization": process.env.VUE_APP_CDS_API_KEY ?? "",
+    },
+    body: JSON.stringify(body),
+    keepalive: true,
+  }).then(() => resetData());
+}
+
+watch(showSplashScreen, (show: boolean) => {
+  if (!show && responseOptOut.value === null) {
+    showPrivacyDialog.value = true; 
+  }
+});
+
+watch(responseOptOut, (optOut: boolean | null) => {
+  if (optOut !== null) {
+    window.localStorage.setItem(OPT_OUT_KEY, String(optOut));
+  }
+});
+
+watch(ahaOptOut, (optOut: boolean | null) => {
+  if (optOut !== null) {
+    window.localStorage.setItem(AHA_OPT_OUT_KEY, String(optOut));
+  }
+});
+
+watch(showQuestion, (show: boolean) => {
+  if (show && questionTimeout) {
+    clearTimeout(questionTimeout);
+  }
+});
+
+window.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    updateUserData();
+  } else {
+    resetData();
+  }
+});
+
+window.onbeforeunload = updateUserData;
+
 
 </script>
 
@@ -2143,6 +2425,12 @@ svg.fa-xmark {
   margin-bottom: 10px;
 }
 
+#change-flags {
+  display: flex;
+  flex-direction: row;
+  gap: 3px;
+}
+
 .info-button {
   /* most of the styling comes from .event-button */
   border: 1px solid var(--accent-color);
@@ -2174,6 +2462,69 @@ svg.fa-xmark {
   &:hover {
     opacity: 0.7;
   }  
+}
+
+#privacy-popup-dialog {
+
+  .v-card-text {
+    color: #BDBDBD;
+  }
+
+  .v-overlay__content {
+    font-size: var(--default-font-size);
+    background-color: purple;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+  }
+
+  .v-btn--size-default {
+      font-size: calc(0.9 * var(--default-font-size));
+    }  
+
+  .v-card-actions .v-btn {
+    padding: 0 4px;
+  }
+}
+
+.question-root {
+  position: absolute !important;
+  right: 5px;
+  bottom: 0;
+  padding: 5px;
+  width: fit-content !important;
+  // left: 50%;
+  // transform: translateX(-50%);
+  gap: 0 !important;
+  border: solid 1px #EFEFEF !important;
+  border-radius: 10px !important;
+  background-color: #222222 !important;
+  opacity: 0.95 !important;
+  z-index: 20000;
+
+  .question-title {
+    color: #EFEFEF;
+    font-size: var(--default-font-size);
+  }
+
+  .response-box {
+    width: 100%;
+    margin-top: 20px;
+  }
+
+  .v-card-text {
+    padding-bottom: 0;
+  }
+
+  .v-card-actions {
+    padding: 0;
+  }
+
+  .privacy-button {
+    font-size: 10px;
+    position: absolute;
+    left: 5px;
+  }
 }
 
 </style>
