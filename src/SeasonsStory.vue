@@ -336,7 +336,6 @@
     </div>
     <div id="change-flags">
       <icon-button
-        v-if="showQuestion"
         icon="mdi-comment-quote"
         @activate="showQuestion = true"
         :color="accentColor"
