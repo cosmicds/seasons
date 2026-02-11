@@ -32,7 +32,7 @@ const props = withDefaults(defineProps<Props>(), {
 const riseAngle = computed(() => dayFractionForTimestamp(props.rise + props.timezoneOffset));
 const daylightFraction = computed(() => dayFractionForTimestamp(props.set - props.rise));
 
-const halfTransitionTurnSize = 0.01;
+const halfTransitionTurnSize = 0.02;
 
 const cssVars = computed(() => {
   const dawnStart = `${(riseAngle.value - halfTransitionTurnSize).toFixed(2)}turn`;
