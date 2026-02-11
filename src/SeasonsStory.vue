@@ -266,7 +266,7 @@
           </v-slider>
           <v-slider
             v-model="sliderValue"
-            :color="accentColor"
+            :color="sunAlways === 'down' ? NIGHTTIME : accentColor"
             :min="sliderMin"
             :max="sliderMax"
             thumb-label="always"
@@ -1041,10 +1041,6 @@ const seasonalColors = {
 const NIGHTTIME = "rgb(179, 179, 179)";
 
 const accentColor = computed(() => {
-  
-  if (sunAlways.value === "down") {
-    return NIGHTTIME;
-  }
 
   const event = selectedEvent.value;
   if (!event) {
@@ -1449,6 +1445,7 @@ const cssVars = computed(() => {
     "--app-content-height": showTextSheet.value ? "66%" : "100%",
     "--time-slider-width": `${daylightPercentage.value.toFixed(2)}%`,
     "--time-slider-left": `${(100 * Math.min(1, dayFractionForTimestamp(startTime.value + selectedTimezoneOffset.value))).toFixed(2)}%`,
+    "--thumb-label-color": sunAlways.value === "down" ? NIGHTTIME : accentColor.value,
   };
 });
 
@@ -2350,14 +2347,14 @@ video {
       color: white;
       background-color: rgba(0, 0, 0, 0.5);
       font-weight: 600;
-      border: 2px solid var(--accent-color);
+      border: 2px solid var(--thumb-label-color);
       border-radius: 5px;
       width: max-content;
       padding: 10px;
       font-size: 0.8rem;
 
       &::before {
-        color: var(--accent-color);
+        color: var(--thumb-label-color);
       }
 
       @media (max-width: 699px) {
