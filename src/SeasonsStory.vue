@@ -1725,6 +1725,9 @@ async function createUserEntry() {
 }
 
 function resetData() {
+  howToUseTimeMs = 0;
+  whatToExploreTimeMs = 0;
+
   timeSliderUsedCount = 0;
   events = [];
   userSelectedDates = [];
@@ -1742,6 +1745,8 @@ function resetData() {
 
   const now = Date.now();
   appStartTimestamp = now;
+  howToUseStartTimestamp = (showTextSheet.value && tab.value == 0) ? now : null;
+  whatToExploreStartTimestamp = (showTextSheet.value && tab.value == 1) ? now : null;
 }
 
 function updateUserData() {
