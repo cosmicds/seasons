@@ -800,7 +800,6 @@ if (pastEvents.length > 0) {
 
 const startTime = ref(0);
 const endTime = ref(0);
-const sunAlways = ref<"up" | "down" | null>(null);
 const sliderMin = 0;
 const sliderMax = 500;
 const sliderRange = sliderMax - sliderMin;
@@ -1008,6 +1007,18 @@ const currentDayInfo = computed(() => {
   return getStartAndEndTimes(day);
 });
 
+const sunAlways = computed<"up" | "down" | null>(() => {
+  let polarInfo: ReturnType<typeof getStartAndEndTimes>[2] | null = null;
+  if (selectedEvent.value != null) {
+    polarInfo = currentDayInfo.value[2];
+  } else if (selectedCustomDate.value != null) {
+    polarInfo = getStartAndEndTimes(selectedCustomDate.value)[2];
+  }
+  return polarInfo != null ? 
+    (polarInfo.sunAlwaysUp ? "up" : (polarInfo.sunAlwaysDown ? "down" : null)) :
+    null;
+});
+
 function dayString(date: Date) {
   return date.toLocaleString("en-US", {
     year: "numeric",
@@ -1080,10 +1091,9 @@ function updateSliderBounds(_newLocation: LocationDeg, oldLocation: LocationDeg)
   if (selectedEvent.value === null) {
     return;
   }
-  const [start, end, polarInfo] = getStartAndEndTimes(getDateForEvent(selectedEvent.value));
+  const [start, end, _polarInfo] = getStartAndEndTimes(getDateForEvent(selectedEvent.value));
   startTime.value = start.getTime();
   endTime.value = end.getTime();
-  sunAlways.value = polarInfo.sunAlwaysUp ? "up" : (polarInfo.sunAlwaysDown ? "down" : null);
 
   const oldOffset = getTimezoneOffset(tzlookup(oldLocation.latitudeDeg, oldLocation.longitudeDeg));
 
