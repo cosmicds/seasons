@@ -4,26 +4,23 @@
     :color="color"
     :style="css"
   >
-    <template #title>
+    <v-btn
+      density="compact"
+      class="close-button"
+      icon="mdi-close"
+      @click="emit('dismiss', response)"
+    ></v-btn>
+    <v-card-text>
       <div class="question-title">
         {{ question }} 
       </div>
-     <v-btn
-        density="compact"
-        class="close-button"
-        icon="mdi-close"
-        @click="emit('dismiss', response)"
-      ></v-btn>
-    </template>
-    <v-card-text>
       <v-form
-        @submit.prevent="emit('finish', response)"
+        @submit.prevent="() => { emit('finish', response); response = null; }"
       >
         <v-expand-transition>
           <VTextarea
             v-model="response"
             class="response-box text-body-2"
-            :placeholder="commentPlaceholder"
             max-rows="4"
             density="compact"
             width="100%"
@@ -31,6 +28,11 @@
           >
           </VTextarea>
         </v-expand-transition>
+        <div class="mb-4">
+          <span class="info-text">
+            Your anonymous response will be used by the CosmicDS team to improve the educational experience.
+          </span>
+        </div>
         <v-expand-transition>
           <div class="button-row">
             <v-btn
@@ -51,11 +53,6 @@
           </div>
         </v-expand-transition>
       </v-form>
-      <div>
-        <span class="info-text">
-          Your anonymous response will be used by the CosmicDS team to improve the educational experience.
-        </span>
-      </div>
     </v-card-text>
     <template #actions>
       <slot name="footer"></slot>
@@ -69,14 +66,12 @@ import { computed, ref, useSlots } from "vue";
 
 interface QuestionProps {
   question?: string;
-  commentPlaceholder?: string;
   color?: string;
   baseColor?: string;
 }
 
 withDefaults(defineProps<QuestionProps>(), {
   question: "Share an “aha” moment about seasons that you experienced from using this app.",
-  commentPlaceholder: "Share your moment here.",
   color: "surface",
 });
 
@@ -115,42 +110,17 @@ const response = ref<string | null>(null);
   box-shadow: 0 0 0 5px silver;
 }
 
-.rating-notification {
-  border-radius: 5px;
-  font-size: calc(1.1 * var(--default-font-size));
-  padding: 1em;
-  color: white;
-
-  &.success {
-    background-color: #9a009a;
-  }
-  &.error {
-    background-color: #b30000;
-  }
-}
-
-.response-box {
-  width: 75%;
-}
-
 .v-card-text {
-  width: 90%;
+  padding: 2rem;
 }
 
 .v-card-actions {
   display: var(--footer-visible);
 }
 
-.close-button {
-  display: absolute;
-  top: 2px;
-  right: 2px;
-}
-
 .question-title {
-  font-size: 0.9rem;
   width: 100%;
-  text-align: center;
+  text-align: left;
   padding: 5px;
   white-space: normal;
   word-break: auto-phrase;
@@ -163,7 +133,9 @@ const response = ref<string | null>(null);
 .button-row {
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
+  justify-content: right;
+  align-items: center;
+  gap: 1.5rem;
 }
 
 .info-text {
@@ -173,7 +145,7 @@ const response = ref<string | null>(null);
 
 .close-button {
   position: absolute !important;
-  top: 5px;
-  right: 5px;
+  top: 0.5rem;
+  right: 0.5rem;
 }
 </style>
