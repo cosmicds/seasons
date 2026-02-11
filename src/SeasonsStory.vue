@@ -1057,7 +1057,14 @@ const seasonalColors = {
   winter: '#c1e2fc'   
 };
 
+const NIGHTTIME = "rgb(179, 179, 179)";
+
 const accentColor = computed(() => {
+  
+  if (sunAlways.value === "down") {
+    return NIGHTTIME;
+  }
+
   const event = selectedEvent.value;
   if (!event) {
     return seasonalColors.spring;
