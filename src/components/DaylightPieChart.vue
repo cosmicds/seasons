@@ -50,7 +50,7 @@ const cssVars = computed(() => {
             `conic-gradient(
                var(--night-color) ${dawnStart},
                var(--day-color) ${dawnEnd} ${duskStart},
-               var(--night-color) ${duskEnd} 100%
+               var(--night-color) ${duskEnd}
              )
              `),
   };
