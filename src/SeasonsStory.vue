@@ -1216,22 +1216,41 @@ function handlePlaying(play: boolean) {
   events.push(play ? 'wwt_play' : 'wwt_pause');
 }
 
+function centerOnMidday() {
+  const currentAltAz = equatorialToHorizontal(
+    store.raRad,
+    store.decRad,
+    selectedLocation.value.latitudeDeg * D2R,
+    selectedLocation.value.longitudeDeg * D2R,
+    store.currentTime,
+  );
+  const middayRADec = horizontalToEquatorial(
+    currentAltAz.altRad,
+    middayAltAz.value.azRad,
+    selectedLocation.value.latitudeDeg * D2R,
+    selectedLocation.value.longitudeDeg * D2R,
+    store.currentTime,
+  );
+  store.gotoRADecZoom({
+    raRad: middayRADec.raRad,
+    decRad: middayRADec.decRad,
+    zoomDeg: store.zoomDeg,
+    instant: true,
+  });
+}
+
 function goToEvent(event: EventOfInterest) {
   const day = getDateForEvent(event);
-  const time = day.getTime();
-
-  const [start, end, _polarInfo] = getStartAndEndTimes(day);
   if (event !== 'custom') {
     selectedCustomDate.value = day;
   }
-  store.setTime(new Date(time));
-  const timeStart = start.getTime();
-  store.setTime(new Date(timeStart));
-  startTime.value = timeStart; // - timeStart % (24 * 60 * 60 * 1000) - selectedTimezoneOffset.value; // round down to the start of the day
-
-  endTime.value = end.getTime();
-
-  setTimeout(() => resetView(), 100);
+  updateSliderBounds(selectedLocation.value, selectedLocation.value);
+  resetView();
+  WWTControl.singleton.renderOneFrame();
+  updatePathInFoV();
+  if (pathInFoV.value) {
+    centerOnMidday();
+  }
 }
 
 const wwtStats = markRaw({
@@ -1634,26 +1653,7 @@ watch(selectedLocation, (location: LocationDeg, oldLocation: LocationDeg) => {
   WWTControl.singleton.renderOneFrame();
   updatePathInFoV();
   if (pathInFoV.value) {
-    const currentAltAz = equatorialToHorizontal(
-      store.raRad,
-      store.decRad,
-      selectedLocation.value.latitudeDeg * D2R,
-      selectedLocation.value.longitudeDeg * D2R,
-      store.currentTime,
-    );
-    const middayRADec = horizontalToEquatorial(
-      currentAltAz.altRad,
-      middayAltAz.value.azRad,
-      selectedLocation.value.latitudeDeg * D2R,
-      selectedLocation.value.longitudeDeg * D2R,
-      store.currentTime,
-    );
-    store.gotoRADecZoom({
-      raRad: middayRADec.raRad,
-      decRad: middayRADec.decRad,
-      zoomDeg: store.zoomDeg,
-      instant: true,
-    });
+    centerOnMidday();
   }
 });
 
