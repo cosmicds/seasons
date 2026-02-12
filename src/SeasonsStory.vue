@@ -1038,7 +1038,7 @@ const seasonalColors = {
   winter: '#c1e2fc'   
 };
 
-const NIGHTTIME = "rgb(179, 179, 179)";
+const NIGHTTIME = "rgb(120, 120, 120)";
 
 const accentColor = computed(() => {
 
