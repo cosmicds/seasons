@@ -1986,13 +1986,17 @@ body {
 }
 
 // From Sara Soueidan (https://www.sarasoueidan.com/blog/focus-indicators/) & Erik Kroes (https://www.erikkroes.nl/blog/the-universal-focus-state/)
-:focus-visible,
-button:focus-visible,
-.focus-visible,
-.v-selection-control--focus-visible .v-selection-control__input {
+// checkbox will only get oreo styling when user tabs by keyboard.
+:focus-visible, .v-checkbox .v-selection-control__input:has(:focus-visible) {
   outline: 9px double white !important;
   box-shadow: 0 0 0 6px black !important;
   border-radius: .125rem;
+}
+
+// Reduce focus indicator for text input fields only (they have their own built-in indicators)
+.v-text-field input:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .video-wrapper {
