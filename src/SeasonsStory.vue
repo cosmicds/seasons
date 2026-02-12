@@ -358,30 +358,33 @@
           events.push(`wwt_rate ${rate}`);
         }"
         />
-      <icon-button
+      <div
         v-else
-        id="play-pause"
-        :icon="playing ? 'pause' : 'play'"
-        @activate="() => {
-          playing = !playing;
-          store.setClockRate(playing ? 1000 : 0);
-          store.setClockSync(playing);
-          handlePlaying(playing);
-        }"
-        :tooltip-text="playing ? 'Pause' : 'Play'"
-        tooltip-offset="5px"
-        show-tooltip
-        :color="accentColor"
-        :focus-color="accentColor"
-      ></icon-button>
-      <daylight-pie-chart
-        v-if="smallSize"
-        :rise="startTime"
-        :set="endTime"
-        :always="sunAlways"
-        size="50px"
-        :timezone-offset="selectedTimezoneOffset"
-      />
+        id="small-play-pie-chart"
+      >
+        <icon-button
+          id="play-pause"
+          :icon="playing ? 'pause' : 'play'"
+          @activate="() => {
+            playing = !playing;
+            store.setClockRate(playing ? 1000 : 0);
+            store.setClockSync(playing);
+            handlePlaying(playing);
+          }"
+          :tooltip-text="playing ? 'Pause' : 'Play'"
+          tooltip-offset="5px"
+          show-tooltip
+          :color="accentColor"
+          :focus-color="accentColor"
+        ></icon-button>
+        <daylight-pie-chart
+          :rise="startTime"
+          :set="endTime"
+          :always="sunAlways"
+          size="50px"
+          :timezone-offset="selectedTimezoneOffset"
+        />
+      </div>
     </div>
     <div id="change-flags">
       <icon-button
@@ -2391,6 +2394,17 @@ video {
 #bottom-content #speed-buttons {
   @media (max-width: 699px) {
     gap: 6px !important;
+  }
+}
+
+#small-play-pie-chart {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+
+  #play-pause {
+    height: auto;
+    flex-shrink: 0;
   }
 }
 
