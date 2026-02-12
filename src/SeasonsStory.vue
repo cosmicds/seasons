@@ -131,6 +131,8 @@
             label="Auto-track Sun"
             density="compact"
             hide-details
+            @keydown.space.prevent="forceCamera = !forceCamera"
+            @keydown.enter.prevent="forceCamera = !forceCamera"
           />
         </div>
         <!-- go to sun -->
