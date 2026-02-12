@@ -11,6 +11,7 @@
 
     <!-- This contains the splash screen content -->
   <splash-screen
+    ref="splashScreenRef"
     v-if="splashReady"
     title="Seasons"
     :cssVars="cssVars"
@@ -34,7 +35,7 @@
 
     <!-- This block contains the elements (e.g. icon buttons displayed at/near the top of the screen -->
 
-    <div id="top-content">
+    <div id="top-content" :inert="showSplashScreen || undefined">
       <div id="left-buttons">
         <div class="location-display">
           <div
@@ -251,7 +252,7 @@
     
     <!-- This block contains the elements (e.g. the project icons) displayed along the bottom of the screen -->
 
-    <div id="bottom-content">
+    <div id="bottom-content" :inert="showSplashScreen || undefined">
 
       <div id="time-slider-chips">
         <div
@@ -388,7 +389,7 @@
         />
       </div>
     </div>
-    <div id="change-flags">
+    <div id="change-flags" :inert="showSplashScreen || undefined">
       <icon-button
         icon="mdi-comment-quote"
         @activate="showQuestion = true"
@@ -414,7 +415,7 @@
       >
       </icon-button>
     </div>
-    <div id="body-logos" v-if="!smallSize">
+    <div id="body-logos" v-if="!smallSize" :inert="showSplashScreen || undefined">
       <credit-logos
         :default-logos="['cosmicds', 'wwt', 'sciact', 'nasa']"
       />
@@ -832,6 +833,7 @@ const { smAndDown } = useDisplay();
 const splash = new URLSearchParams(window.location.search).get("splash")?.toLowerCase() !== "false";
 const showSplashScreen = ref(splash);
 const splashReady = computed(() => splash && selectedEvent.value !== null);
+const splashScreenRef = ref<HTMLElement | null>(null);
 const backgroundImagesets = reactive<BackgroundImageset[]>([]);
 const sheet = ref<SheetType | null>(null);
 const layersLoaded = ref(false);
@@ -1656,6 +1658,18 @@ watch(selectedCustomDate, (date: Date | null) => {
 });
 
 watch(inNorthernHemisphere, (_inNorth: boolean) => resetNSEWText());
+watch(splashReady, (ready: boolean) => {
+  if (ready) {
+    nextTick(() => {
+      if (splashScreenRef.value) {
+        const firstFocusable = splashScreenRef.value.querySelector<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (firstFocusable) {
+          firstFocusable.focus();
+        }
+      }
+    });
+  }
+});
 
 
 const STORY_DATA_URL = `${API_BASE_URL}/seasons/data`;
