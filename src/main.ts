@@ -15,6 +15,7 @@ import SeasonsStory from "./SeasonsStory.vue";
 import SplashScreen from "./components/SplashScreen.vue";
 import LocationSearch from "./components/LocationSearch.vue";
 import TimeDisplay from "./components/TimeDisplay.vue";
+import DaylightPieChart from "./components/DaylightPieChart.vue";
 import QuestionDialog from "./components/QuestionDialog.vue";
 
 import vuetify from "../plugins/vuetify";
@@ -35,6 +36,8 @@ import {
   faXmark,
   faInfo,
   faMagnifyingGlass,
+  faPlay,
+  faPause,
   faCalendarDay,
 } from "@fortawesome/free-solid-svg-icons";
 
@@ -46,6 +49,8 @@ library.add(faVideo);
 library.add(faXmark);
 library.add(faInfo);
 library.add(faMagnifyingGlass);
+library.add(faPlay);
+library.add(faPause);
 library.add(faCalendarDay);
 
 /** v-hide directive taken from https://www.ryansouthgate.com/2020/01/30/vue-js-v-hide-element-whilst-keeping-occupied-space/ */
@@ -92,6 +97,7 @@ createApp(SeasonsStory, {
   .component('time-display', TimeDisplay)
   .component('question-dialog', QuestionDialog)
   .component('v-icon', VIcon)
+  .component('daylight-pie-chart', DaylightPieChart)
 
   // Mount
   .mount("#app");

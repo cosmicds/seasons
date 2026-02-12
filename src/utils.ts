@@ -114,3 +114,8 @@ export function skyOpacityForSunAlt(sunAltRad: number) {
   
   return Math.min(Math.max((1 + Math.atan(Math.PI * sunAltRad / (-astronomicalTwilight))) / 2, 0), 1);
 }
+
+export const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
+export function dayFractionForTimestamp(timestamp: number): number {
+  return (timestamp % MILLISECONDS_PER_DAY) / MILLISECONDS_PER_DAY;
+}

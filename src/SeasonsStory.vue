@@ -252,21 +252,34 @@
     <div id="bottom-content">
 
       <div id="time-slider-chips">
-        <v-slider
-          v-model="sliderValue"
-          :color="accentColor"
-          :min="sliderMin"
-          :max="sliderMax"
-          thumb-label="always"
-          class="time-slider"
-          @end="onTimeSliderEnd"
+        <div
+          class="slider-container"
         >
-          <template v-slot:thumb-label>
-            <div class="thumb-label">
-              {{ selectedLocaledTimeDateString }}
-            </div>
-          </template>
-        </v-slider>
+          <v-slider
+            v-if="!smallSize"
+            :min="sliderMin"
+            :max="sliderMax"
+            :value="null"
+            disabled
+            class="dummy-time-slider"
+          >
+          </v-slider>
+          <v-slider
+            v-model="sliderValue"
+            :color="sunAlways === 'down' ? NIGHTTIME : accentColor"
+            :min="sliderMin"
+            :max="sliderMax"
+            thumb-label="always"
+            :class="['time-slider', { 'time-slider-large': !smallSize }]"
+            @end="onTimeSliderEnd"
+          >
+            <template v-slot:thumb-label>
+              <div class="thumb-label">
+                {{ selectedLocaledTimeDateString }}
+              </div>
+            </template>
+          </v-slider>
+        </div>
 
         <div class="time-chips">
           <v-chip
@@ -313,6 +326,7 @@
       
       <!-- eslint-disable-next-line vue/no-v-model-argument -->
       <speed-control
+        v-if="!smallSize"
         :model-value="playing" 
         :store="store"
         :color="accentColor" 
@@ -344,6 +358,30 @@
           events.push(`wwt_rate ${rate}`);
         }"
         />
+      <icon-button
+        v-else
+        id="play-pause"
+        :icon="playing ? 'pause' : 'play'"
+        @activate="() => {
+          playing = !playing;
+          store.setClockRate(playing ? 1000 : 0);
+          store.setClockSync(playing);
+          handlePlaying(playing);
+        }"
+        :tooltip-text="playing ? 'Pause' : 'Play'"
+        tooltip-offset="5px"
+        show-tooltip
+        :color="accentColor"
+        :focus-color="accentColor"
+      ></icon-button>
+      <daylight-pie-chart
+        v-if="smallSize"
+        :rise="startTime"
+        :set="endTime"
+        :always="sunAlways"
+        size="50px"
+        :timezone-offset="selectedTimezoneOffset"
+      />
     </div>
     <div id="change-flags">
       <icon-button
@@ -758,7 +796,7 @@ import {
 import { MapBoxFeature, MapBoxFeatureCollection, geocodingInfoForSearch, textForLocation } from "@cosmicds/vue-toolkit/src/mapbox";
 
 import { useTimezone } from "./timezones";
-import { horizontalToEquatorial } from "./utils";
+import { dayFractionForTimestamp, horizontalToEquatorial } from "./utils";
 import { resetNSEWText, drawPlanets, renderOneFrame, drawEcliptic, drawSkyOverlays } from "./wwt-hacks";
 import { useSun } from "./composables/useSun";
 import { formatInTimeZone } from "date-fns-tz";
@@ -1000,7 +1038,10 @@ const seasonalColors = {
   winter: '#c1e2fc'   
 };
 
+const NIGHTTIME = "rgb(120, 120, 120)";
+
 const accentColor = computed(() => {
+
   const event = selectedEvent.value;
   if (!event) {
     return seasonalColors.spring;
@@ -1037,6 +1078,18 @@ const displayedDate = computed(() => {
 const currentDayInfo = computed(() => {
   const day = getDateForEvent(selectedEvent.value || 'today');
   return getStartAndEndTimes(day);
+});
+
+const sunAlways = computed<"up" | "down" | null>(() => {
+  let polarInfo: ReturnType<typeof getStartAndEndTimes>[2] | null = null;
+  if (selectedEvent.value != null) {
+    polarInfo = currentDayInfo.value[2];
+  } else if (selectedCustomDate.value != null) {
+    polarInfo = getStartAndEndTimes(selectedCustomDate.value)[2];
+  }
+  return polarInfo != null ? 
+    (polarInfo.sunAlwaysUp ? "up" : (polarInfo.sunAlwaysDown ? "down" : null)) :
+    null;
 });
 
 function dayString(date: Date) {
@@ -1390,8 +1443,13 @@ const cssVars = computed(() => {
   return {
     "--accent-color": accentColor.value,
     "--app-content-height": showTextSheet.value ? "66%" : "100%",
+    "--time-slider-width": `${daylightPercentage.value.toFixed(2)}%`,
+    "--time-slider-left": `${(100 * Math.min(1, dayFractionForTimestamp(startTime.value + selectedTimezoneOffset.value))).toFixed(2)}%`,
+    "--thumb-label-color": sunAlways.value === "down" ? NIGHTTIME : accentColor.value,
   };
 });
+
+const daylightPercentage = computed(() => 100 * Math.min(1, dayFractionForTimestamp(endTime.value - startTime.value)));
 
 
 /**
@@ -2233,7 +2291,7 @@ video {
 }
 
 #time-slider-chips {
-  width: 90%;
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
   padding-left: 3rem;
@@ -2256,11 +2314,32 @@ video {
   }
 }
 
+.slider-container {
+  position: relative;
+  height: 32px;
+}
+
+.dummy-time-slider {
+  position: absolute;
+  left: 0;
+  width: 100%;
+
+  .v-slider-thumb {
+    display: none;
+  }
+}
+
 .v-slider {
   pointer-events: auto;
 }
 
 .time-slider {
+
+  &.time-slider-large {
+    position: absolute;
+    width: var(--time-slider-width);
+    left: var(--time-slider-left);
+  }
 
   .v-slider-thumb {
 
@@ -2268,14 +2347,14 @@ video {
       color: white;
       background-color: rgba(0, 0, 0, 0.5);
       font-weight: 600;
-      border: 2px solid var(--accent-color);
+      border: 2px solid var(--thumb-label-color);
       border-radius: 5px;
       width: max-content;
       padding: 10px;
       font-size: 0.8rem;
 
       &::before {
-        color: var(--accent-color);
+        color: var(--thumb-label-color);
       }
 
       @media (max-width: 699px) {
