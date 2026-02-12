@@ -836,6 +836,10 @@ const showQuestion = ref(false);
 let questionTimeout: ReturnType<typeof setTimeout> | null = null;
 
 const tab = ref(0);
+let howToUseTimeMs = 0;
+let whatToExploreTimeMs = 0;
+let howToUseStartTimestamp = null as number | null;
+let whatToExploreStartTimestamp = null as number | null;
 
 const playing = ref(false);
 const showLocationSelector = ref(false);
@@ -1652,6 +1656,45 @@ watch(selectedCustomDate, (date: Date | null) => {
 
 watch(inNorthernHemisphere, (_inNorth: boolean) => resetNSEWText());
 
+function updateTabTime(leavingTab: number, timestamp: number) {
+  if (leavingTab === 0) {
+    howToUseTimeMs += (timestamp - (howToUseStartTimestamp ?? timestamp));
+    howToUseStartTimestamp = null;
+  } else {
+    whatToExploreTimeMs += (timestamp - (whatToExploreStartTimestamp ?? timestamp));
+    whatToExploreStartTimestamp = null;
+  }
+}
+
+function startTabTime(enteringTab: number, timestamp: number) {
+  if (enteringTab === 0) {
+    howToUseStartTimestamp = timestamp;
+  } else {
+    whatToExploreStartTimestamp = timestamp;    
+  }
+}
+
+watch(showTextSheet, (show: boolean) => {
+  const now = Date.now();
+  if (show) {
+    startTabTime(tab.value, now);
+  } else {
+    updateTabTime(tab.value, now);
+  }
+});
+
+watch(tab, (newTab: number) => {
+  // This shouldn't ever happen
+  if (!showTextSheet.value) {
+    return;
+  }
+  // We're going to `newTab`
+  // The tab indices are 0 and 1, so we're leaving `1 - newTab`
+  const now = Date.now();
+  startTabTime(newTab, now);
+  updateTabTime(1 - newTab, now);
+});
+
 
 const STORY_DATA_URL = `${API_BASE_URL}/seasons/data`;
 const OPT_OUT_KEY = "seasons-optout" as const;
@@ -1740,6 +1783,9 @@ async function createUserEntry() {
 }
 
 function resetData() {
+  howToUseTimeMs = 0;
+  whatToExploreTimeMs = 0;
+
   timeSliderUsedCount = 0;
   events = [];
   userSelectedDates = [];
@@ -1757,6 +1803,8 @@ function resetData() {
 
   const now = Date.now();
   appStartTimestamp = now;
+  howToUseStartTimestamp = (showTextSheet.value && tab.value == 0) ? now : null;
+  whatToExploreStartTimestamp = (showTextSheet.value && tab.value == 1) ? now : null;
 }
 
 function updateUserData() {
@@ -1765,6 +1813,8 @@ function updateUserData() {
   }
 
   const now = Date.now();
+  const howToUseTime = (showTextSheet.value && howToUseStartTimestamp !== null) ? now - howToUseStartTimestamp : howToUseTimeMs;
+  const whatToExploreTime = (showTextSheet.value && whatToExploreStartTimestamp !== null) ? now - whatToExploreStartTimestamp : whatToExploreTimeMs;
   const body = {
     events,
     // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -1775,6 +1825,10 @@ function updateUserData() {
     user_selected_locations: userSelectedLocations,
     // eslint-disable-next-line @typescript-eslint/naming-convention
     app_time_ms: now - appStartTimestamp,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    how_to_use_time_ms: howToUseTime,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    what_to_explore_time_ms: whatToExploreTime,
     // eslint-disable-next-line @typescript-eslint/naming-convention
     wwt_time_reset_count: wwtStats.timeResetCount,
     // eslint-disable-next-line @typescript-eslint/naming-convention
