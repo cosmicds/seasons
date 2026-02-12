@@ -796,7 +796,7 @@ import {
 import { MapBoxFeature, MapBoxFeatureCollection, geocodingInfoForSearch, textForLocation } from "@cosmicds/vue-toolkit/src/mapbox";
 
 import { useTimezone } from "./timezones";
-import { dayFractionForTimestamp, horizontalToEquatorial } from "./utils";
+import { dayFractionForTimestamp, equatorialToHorizontal, horizontalToEquatorial } from "./utils";
 import { resetNSEWText, drawPlanets, renderOneFrame, drawEcliptic, drawSkyOverlays } from "./wwt-hacks";
 import { useSun } from "./composables/useSun";
 import { formatInTimeZone } from "date-fns-tz";
@@ -1632,8 +1632,29 @@ watch(selectedLocation, (location: LocationDeg, oldLocation: LocationDeg) => {
   updateSliderBounds(location, oldLocation);
   resetView();
   WWTControl.singleton.renderOneFrame();
-
-  setTimeout(() => updatePathInFoV(), 500);
+  updatePathInFoV();
+  if (pathInFoV.value) {
+    const currentAltAz = equatorialToHorizontal(
+      store.raRad,
+      store.decRad,
+      selectedLocation.value.latitudeDeg * D2R,
+      selectedLocation.value.longitudeDeg * D2R,
+      store.currentTime,
+    );
+    const middayRADec = horizontalToEquatorial(
+      currentAltAz.altRad,
+      middayAltAz.value.azRad,
+      selectedLocation.value.latitudeDeg * D2R,
+      selectedLocation.value.longitudeDeg * D2R,
+      store.currentTime,
+    );
+    store.gotoRADecZoom({
+      raRad: middayRADec.raRad,
+      decRad: middayRADec.decRad,
+      zoomDeg: store.zoomDeg,
+      instant: true,
+    });
+  }
 });
 
 watch(currentTime, (_time: Date) => {
