@@ -1109,7 +1109,8 @@ function onScreen(pt: {x: number; y: number; }) {
 
 function updatePathInFoV() {
   const endPos = getSunPositionAtTime(new Date(endTime.value));
-  const screenPoint = store.findScreenPointForRADec({ ra: endPos.raRad * R2D, dec: endPos.decRad * R2D });
+  const endRADecNow = horizontalToEquatorial(endPos.altRad, endPos.azRad, selectedLocation.value.latitudeDeg * D2R, selectedLocation.value.longitudeDeg, store.currentTime);
+  const screenPoint = store.findScreenPointForRADec({ ra: endRADecNow.raRad * R2D, dec: endRADecNow.decRad * R2D });
   pathInFoV.value = onScreen(screenPoint);
 }
 
@@ -1632,7 +1633,7 @@ watch(selectedLocation, (location: LocationDeg, oldLocation: LocationDeg) => {
   resetView();
   WWTControl.singleton.renderOneFrame();
 
-  nextTick(() => updatePathInFoV());
+  setTimeout(() => updatePathInFoV(), 500);
 });
 
 watch(currentTime, (_time: Date) => {
