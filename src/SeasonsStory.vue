@@ -2009,8 +2009,8 @@ body {
   border-radius: .125rem;
 }
 
-// Reduce focus indicator for text input fields only (they have their own built-in indicators)
-.v-text-field input:focus-visible {
+// Reduce focus indicator for text input fields only (they have their own built-in indicators) and from v-slider thumb when focused via mouse (not keyboard)
+.v-text-field input:focus-visible, .v-slider .v-slider-thumb:focus:not(:focus-visible) {
   outline: none !important;
   box-shadow: none !important;
 }
