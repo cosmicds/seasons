@@ -127,7 +127,7 @@
           class="options"
         >
           <v-checkbox
-            v-model="forceCamera"
+            v-model="trackSun"
             label="Auto-track Sun"
             density="compact"
             hide-details
@@ -831,9 +831,12 @@ const backgroundImagesets = reactive<BackgroundImageset[]>([]);
 const sheet = ref<SheetType | null>(null);
 const layersLoaded = ref(false);
 const positionSet = ref(false);
-const forceCamera = ref(true);
+const trackSun = ref(true);
+const pathInFoV = ref(false);
+const forceCamera = computed(() => trackSun.value && !pathInFoV.value);
 const showQuestion = ref(false);
 let questionTimeout: ReturnType<typeof setTimeout> | null = null;
+
 
 const tab = ref(0);
 let howToUseTimeMs = 0;
@@ -1096,6 +1099,20 @@ const sunAlways = computed<"up" | "down" | null>(() => {
     null;
 });
 
+function onScreen(pt: {x: number; y: number; }) {
+  const context = WWTControl.singleton.renderContext;
+  return pt.x >= 0 && 
+    pt.x <= context.width &&
+    pt.y >= 0 &&
+    pt.y <= context.height;
+}
+
+function updatePathInFoV() {
+  const endPos = getSunPositionAtTime(new Date(endTime.value));
+  const screenPoint = store.findScreenPointForRADec({ ra: endPos.raRad * R2D, dec: endPos.decRad * R2D });
+  pathInFoV.value = onScreen(screenPoint);
+}
+
 function dayString(date: Date) {
   return date.toLocaleString("en-US", {
     year: "numeric",
@@ -1184,7 +1201,7 @@ function updateSliderBounds(_newLocation: LocationDeg, oldLocation: LocationDeg)
 }
 
 function handlePlaying(play: boolean) {
-  if(forceCamera.value) {
+  if (forceCamera.value) {
     resetView(MAX_ZOOM);
   }
   // Auto-pause when time reaches sunset or sunrise, accounting for playing direction
@@ -1388,6 +1405,7 @@ function aspectRatioSetup() {
       if (entry.target === canvas) {
         updateAzOffsets();
         resetView();
+        nextTick(() => updatePathInFoV());
         return;
       }
     }
@@ -1613,6 +1631,8 @@ watch(selectedLocation, (location: LocationDeg, oldLocation: LocationDeg) => {
   updateSliderBounds(location, oldLocation);
   resetView();
   WWTControl.singleton.renderOneFrame();
+
+  nextTick(() => updatePathInFoV());
 });
 
 watch(currentTime, (_time: Date) => {
