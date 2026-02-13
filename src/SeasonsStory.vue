@@ -1209,7 +1209,7 @@ function handlePlaying(play: boolean) {
   events.push(play ? 'wwt_play' : 'wwt_pause');
 }
 
-function centerOnMidday(altitudeDeg=null) {
+function centerOnMidday(altitudeDeg: number | null =null) {
   let altToUse: number;
   if (altitudeDeg == null) {
     const currentAltAz = equatorialToHorizontal(
