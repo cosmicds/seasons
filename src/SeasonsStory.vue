@@ -802,7 +802,6 @@ import { useSun } from "./composables/useSun";
 import { formatInTimeZone } from "date-fns-tz";
 import { sunPlace } from "./horizon_sky";
 
-
 type SheetType = "text" | "video";
 type CameraParams = Omit<GotoRADecZoomParams, "instant">;
 export interface SeasonsStoryProps {
@@ -835,6 +834,7 @@ const trackSun = ref(true);
 const pathInFoV = ref(false);
 const forceCamera = computed(() => trackSun.value && !pathInFoV.value);
 const showQuestion = ref(false);
+const PATH_FOV_UPDATE_TIMEOUT = 300;
 let questionTimeout: ReturnType<typeof setTimeout> | null = null;
 
 
@@ -1112,12 +1112,6 @@ function updatePathInFoV() {
   const endRADecNow = horizontalToEquatorial(endPos.altRad, endPos.azRad, selectedLocation.value.latitudeDeg * D2R, selectedLocation.value.longitudeDeg * D2R, store.currentTime);
   const screenPoint = store.findScreenPointForRADec({ ra: endRADecNow.raRad * R2D, dec: endRADecNow.decRad * R2D });
   pathInFoV.value = onScreen(screenPoint);
-  console.log(store.raRad * R2D, store.decRad * R2D);
-  console.log(endPos);
-  console.log(endRADecNow);
-  console.log(screenPoint);
-  console.log(pathInFoV.value);
-  console.log("==========");
 }
 
 function dayString(date: Date) {
@@ -1237,9 +1231,6 @@ function centerOnMidday() {
     selectedLocation.value.longitudeDeg * D2R,
     store.currentTime,
   );
-  console.log(currentAltAz.altRad * R2D, middayAltAz.value.azRad * R2D);
-  console.log(middayRADec);
-  console.log(store.gotoRADecZoom);
   store.gotoRADecZoom({
     raRad: middayRADec.raRad,
     decRad: middayRADec.decRad,
@@ -1261,7 +1252,7 @@ function goToEvent(event: EventOfInterest) {
     if (pathInFoV.value) {
       centerOnMidday();
     }
-  }, 100);
+  }, PATH_FOV_UPDATE_TIMEOUT);
 }
 
 const wwtStats = markRaw({
@@ -1437,7 +1428,7 @@ function aspectRatioSetup() {
         updateAzOffsets();
         resetView();
         WWTControl.singleton.renderOneFrame();
-        setTimeout(() => updatePathInFoV(), 100);
+        setTimeout(() => updatePathInFoV(), PATH_FOV_UPDATE_TIMEOUT);
         return;
       }
     }
@@ -1668,7 +1659,7 @@ watch(selectedLocation, (location: LocationDeg, oldLocation: LocationDeg) => {
     if (pathInFoV.value) {
       centerOnMidday();
     }
-  }, 100);
+  }, PATH_FOV_UPDATE_TIMEOUT);
 });
 
 watch(currentTime, (_time: Date) => {
