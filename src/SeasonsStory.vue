@@ -1209,16 +1209,22 @@ function handlePlaying(play: boolean) {
   events.push(play ? 'wwt_play' : 'wwt_pause');
 }
 
-function centerOnMidday() {
-  const currentAltAz = equatorialToHorizontal(
-    store.raRad,
-    store.decRad,
-    selectedLocation.value.latitudeDeg * D2R,
-    selectedLocation.value.longitudeDeg * D2R,
-    store.currentTime,
-  );
+function centerOnMidday(altitudeDeg=null) {
+  let altToUse: number;
+  if (altitudeDeg == null) {
+    const currentAltAz = equatorialToHorizontal(
+      store.raRad,
+      store.decRad,
+      selectedLocation.value.latitudeDeg * D2R,
+      selectedLocation.value.longitudeDeg * D2R,
+      store.currentTime,
+    );
+    altToUse = currentAltAz.altRad;
+  } else {
+    altToUse = altitudeDeg * D2R;
+  }
   const middayRADec = horizontalToEquatorial(
-    currentAltAz.altRad,
+    altToUse,
     middayAltAz.value.azRad,
     selectedLocation.value.latitudeDeg * D2R,
     selectedLocation.value.longitudeDeg * D2R,
@@ -1530,9 +1536,10 @@ function selectSheet(sheetType: SheetType | null) {
 
 function resetView(zoomDeg?: number, withAzOffset=true) {
 
+  let altDeg = 33;
   updatePathInFoV();
   if (pathInFoV.value) {
-    setTimeout(() => centerOnMidday(), 100);
+    setTimeout(() => centerOnMidday(altDeg), 100);
     return;
   }
 
@@ -1544,7 +1551,6 @@ function resetView(zoomDeg?: number, withAzOffset=true) {
 
   const sunAltAz = getSunPositionAtTime(time);
   let az = sunAltAz.azRad;
-  let altDeg = 33;
 
   const middayAltDeg = middayAltAz.value.altRad * R2D;
   const middayAzDeg = middayAltAz.value.azRad * R2D;
