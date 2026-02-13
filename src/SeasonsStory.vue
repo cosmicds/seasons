@@ -1109,9 +1109,15 @@ function onScreen(pt: {x: number; y: number; }) {
 
 function updatePathInFoV() {
   const endPos = getSunPositionAtTime(new Date(endTime.value));
-  const endRADecNow = horizontalToEquatorial(endPos.altRad, endPos.azRad, selectedLocation.value.latitudeDeg * D2R, selectedLocation.value.longitudeDeg, store.currentTime);
+  const endRADecNow = horizontalToEquatorial(endPos.altRad, endPos.azRad, selectedLocation.value.latitudeDeg * D2R, selectedLocation.value.longitudeDeg * D2R, store.currentTime);
   const screenPoint = store.findScreenPointForRADec({ ra: endRADecNow.raRad * R2D, dec: endRADecNow.decRad * R2D });
   pathInFoV.value = onScreen(screenPoint);
+  console.log(store.raRad * R2D, store.decRad * R2D);
+  console.log(endPos);
+  console.log(endRADecNow);
+  console.log(screenPoint);
+  console.log(pathInFoV.value);
+  console.log("==========");
 }
 
 function dayString(date: Date) {
@@ -1231,6 +1237,9 @@ function centerOnMidday() {
     selectedLocation.value.longitudeDeg * D2R,
     store.currentTime,
   );
+  console.log(currentAltAz.altRad * R2D, middayAltAz.value.azRad * R2D);
+  console.log(middayRADec);
+  console.log(store.gotoRADecZoom);
   store.gotoRADecZoom({
     raRad: middayRADec.raRad,
     decRad: middayRADec.decRad,
@@ -1247,10 +1256,12 @@ function goToEvent(event: EventOfInterest) {
   updateSliderBounds(selectedLocation.value, selectedLocation.value);
   resetView();
   WWTControl.singleton.renderOneFrame();
-  updatePathInFoV();
-  if (pathInFoV.value) {
-    centerOnMidday();
-  }
+  setTimeout(() => {
+    updatePathInFoV();
+    if (pathInFoV.value) {
+      centerOnMidday();
+    }
+  }, 100);
 }
 
 const wwtStats = markRaw({
@@ -1425,7 +1436,8 @@ function aspectRatioSetup() {
       if (entry.target === canvas) {
         updateAzOffsets();
         resetView();
-        nextTick(() => updatePathInFoV());
+        WWTControl.singleton.renderOneFrame();
+        setTimeout(() => updatePathInFoV(), 100);
         return;
       }
     }
@@ -1651,10 +1663,12 @@ watch(selectedLocation, (location: LocationDeg, oldLocation: LocationDeg) => {
   updateSliderBounds(location, oldLocation);
   resetView();
   WWTControl.singleton.renderOneFrame();
-  updatePathInFoV();
-  if (pathInFoV.value) {
-    centerOnMidday();
-  }
+  setTimeout(() => {
+    updatePathInFoV();
+    if (pathInFoV.value) {
+      centerOnMidday();
+    }
+  }, 100);
 });
 
 watch(currentTime, (_time: Date) => {
