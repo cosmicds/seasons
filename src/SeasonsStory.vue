@@ -127,7 +127,7 @@
           class="options"
         >
           <v-checkbox
-            v-model="forceCamera"
+            v-model="trackSun"
             label="Auto-track Sun"
             density="compact"
             hide-details
@@ -796,12 +796,11 @@ import {
 import { MapBoxFeature, MapBoxFeatureCollection, geocodingInfoForSearch, textForLocation } from "@cosmicds/vue-toolkit/src/mapbox";
 
 import { useTimezone } from "./timezones";
-import { dayFractionForTimestamp, horizontalToEquatorial } from "./utils";
+import { dayFractionForTimestamp, equatorialToHorizontal, horizontalToEquatorial } from "./utils";
 import { resetNSEWText, drawPlanets, renderOneFrame, drawEcliptic, drawSkyOverlays } from "./wwt-hacks";
 import { useSun } from "./composables/useSun";
 import { formatInTimeZone } from "date-fns-tz";
 import { sunPlace } from "./horizon_sky";
-
 
 type SheetType = "text" | "video";
 type CameraParams = Omit<GotoRADecZoomParams, "instant">;
@@ -831,9 +830,12 @@ const backgroundImagesets = reactive<BackgroundImageset[]>([]);
 const sheet = ref<SheetType | null>(null);
 const layersLoaded = ref(false);
 const positionSet = ref(false);
-const forceCamera = ref(true);
+const trackSun = ref(true);
+const pathInFoV = ref(false);
+const forceCamera = computed(() => trackSun.value && !pathInFoV.value);
 const showQuestion = ref(false);
 let questionTimeout: ReturnType<typeof setTimeout> | null = null;
+
 
 const tab = ref(0);
 let howToUseTimeMs = 0;
@@ -1096,6 +1098,24 @@ const sunAlways = computed<"up" | "down" | null>(() => {
     null;
 });
 
+function updatePathInFoV() {
+  // If the Sun is always up, no need to do the width check, which is problematic then anyways
+  if (sunAlways.value === "up") {
+    pathInFoV.value = false;
+    return;
+  }
+  const startPos = getSunPositionAtTime(new Date(startTime.value));
+  const endPos = getSunPositionAtTime(new Date(endTime.value));
+  const context = WWTControl.singleton.renderContext;
+  let azWidth = Math.abs(endPos.azRad - startPos.azRad) * R2D;
+  const widthToFit = 0.075 * 0.9 * context.width + 12;
+  const peakNorth = Math.min(Math.abs(middayAltAz.value.azRad), Math.abs(middayAltAz.value.azRad - 2 * Math.PI)) < Math.abs(middayAltAz.value.azRad - Math.PI);
+  if (peakNorth) {
+    azWidth= 360 - azWidth;
+  }
+  pathInFoV.value = (azWidth < widthToFit);
+}
+
 function dayString(date: Date) {
   return date.toLocaleString("en-US", {
     year: "numeric",
@@ -1184,7 +1204,7 @@ function updateSliderBounds(_newLocation: LocationDeg, oldLocation: LocationDeg)
 }
 
 function handlePlaying(play: boolean) {
-  if(forceCamera.value) {
+  if (forceCamera.value) {
     resetView(MAX_ZOOM);
   }
   // Auto-pause when time reaches sunset or sunrise, accounting for playing direction
@@ -1198,22 +1218,42 @@ function handlePlaying(play: boolean) {
   events.push(play ? 'wwt_play' : 'wwt_pause');
 }
 
+function centerOnMidday(altitudeDeg: number | null =null) {
+  let altToUse: number;
+  if (altitudeDeg == null) {
+    const currentAltAz = equatorialToHorizontal(
+      store.raRad,
+      store.decRad,
+      selectedLocation.value.latitudeDeg * D2R,
+      selectedLocation.value.longitudeDeg * D2R,
+      store.currentTime,
+    );
+    altToUse = currentAltAz.altRad;
+  } else {
+    altToUse = altitudeDeg * D2R;
+  }
+  const middayRADec = horizontalToEquatorial(
+    altToUse,
+    middayAltAz.value.azRad,
+    selectedLocation.value.latitudeDeg * D2R,
+    selectedLocation.value.longitudeDeg * D2R,
+    store.currentTime,
+  );
+  store.gotoRADecZoom({
+    raRad: middayRADec.raRad,
+    decRad: middayRADec.decRad,
+    zoomDeg: store.zoomDeg,
+    instant: true,
+  });
+}
+
 function goToEvent(event: EventOfInterest) {
   const day = getDateForEvent(event);
-  const time = day.getTime();
-
-  const [start, end, _polarInfo] = getStartAndEndTimes(day);
   if (event !== 'custom') {
     selectedCustomDate.value = day;
   }
-  store.setTime(new Date(time));
-  const timeStart = start.getTime();
-  store.setTime(new Date(timeStart));
-  startTime.value = timeStart; // - timeStart % (24 * 60 * 60 * 1000) - selectedTimezoneOffset.value; // round down to the start of the day
-
-  endTime.value = end.getTime();
-
-  setTimeout(() => resetView(), 100);
+  updateSliderBounds(selectedLocation.value, selectedLocation.value);
+  resetView();
 }
 
 const wwtStats = markRaw({
@@ -1504,6 +1544,14 @@ function selectSheet(sheetType: SheetType | null) {
 }
 
 function resetView(zoomDeg?: number, withAzOffset=true) {
+
+  let altDeg = 33;
+  updatePathInFoV();
+  if (pathInFoV.value) {
+    setTimeout(() => centerOnMidday(altDeg), 100);
+    return;
+  }
+
   const time = store.currentTime;
   const t = time.getTime();
 
@@ -1512,7 +1560,6 @@ function resetView(zoomDeg?: number, withAzOffset=true) {
 
   const sunAltAz = getSunPositionAtTime(time);
   let az = sunAltAz.azRad;
-  let altDeg = 33;
 
   const middayAltDeg = middayAltAz.value.altRad * R2D;
   const middayAzDeg = middayAltAz.value.azRad * R2D;
@@ -1612,7 +1659,6 @@ watch(selectedLocation, (location: LocationDeg, oldLocation: LocationDeg) => {
   updateWWTLocation(location);
   updateSliderBounds(location, oldLocation);
   resetView();
-  WWTControl.singleton.renderOneFrame();
 });
 
 watch(currentTime, (_time: Date) => {
