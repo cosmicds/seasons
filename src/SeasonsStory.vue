@@ -1099,6 +1099,11 @@ const sunAlways = computed<"up" | "down" | null>(() => {
 });
 
 function updatePathInFoV() {
+  // If the Sun is always up, no need to do the width check, which is problematic then anyways
+  if (sunAlways.value === "up") {
+    pathInFoV.value = false;
+    return;
+  }
   const startPos = getSunPositionAtTime(new Date(startTime.value));
   const endPos = getSunPositionAtTime(new Date(endTime.value));
   const context = WWTControl.singleton.renderContext;
