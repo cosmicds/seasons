@@ -834,7 +834,6 @@ const trackSun = ref(true);
 const pathInFoV = ref(false);
 const forceCamera = computed(() => trackSun.value && !pathInFoV.value);
 const showQuestion = ref(false);
-const PATH_FOV_UPDATE_TIMEOUT = 300;
 let questionTimeout: ReturnType<typeof setTimeout> | null = null;
 
 
@@ -1099,19 +1098,12 @@ const sunAlways = computed<"up" | "down" | null>(() => {
     null;
 });
 
-function onScreen(pt: {x: number; y: number; }) {
-  const context = WWTControl.singleton.renderContext;
-  return pt.x >= 0 && 
-    pt.x <= context.width &&
-    pt.y >= 0 &&
-    pt.y <= context.height;
-}
-
 function updatePathInFoV() {
+  const startPos = getSunPositionAtTime(new Date(startTime.value));
   const endPos = getSunPositionAtTime(new Date(endTime.value));
-  const endRADecNow = horizontalToEquatorial(endPos.altRad, endPos.azRad, selectedLocation.value.latitudeDeg * D2R, selectedLocation.value.longitudeDeg * D2R, store.currentTime);
-  const screenPoint = store.findScreenPointForRADec({ ra: endRADecNow.raRad * R2D, dec: endRADecNow.decRad * R2D });
-  pathInFoV.value = onScreen(screenPoint);
+  const context = WWTControl.singleton.renderContext;
+  const azWidth = Math.abs(endPos.azRad - startPos.azRad) * R2D;
+  pathInFoV.value = (azWidth < 0.075 * context.width + 12);
 }
 
 function dayString(date: Date) {
@@ -1246,13 +1238,6 @@ function goToEvent(event: EventOfInterest) {
   }
   updateSliderBounds(selectedLocation.value, selectedLocation.value);
   resetView();
-  WWTControl.singleton.renderOneFrame();
-  setTimeout(() => {
-    updatePathInFoV();
-    if (pathInFoV.value) {
-      centerOnMidday();
-    }
-  }, PATH_FOV_UPDATE_TIMEOUT);
 }
 
 const wwtStats = markRaw({
@@ -1427,8 +1412,6 @@ function aspectRatioSetup() {
       if (entry.target === canvas) {
         updateAzOffsets();
         resetView();
-        WWTControl.singleton.renderOneFrame();
-        setTimeout(() => updatePathInFoV(), PATH_FOV_UPDATE_TIMEOUT);
         return;
       }
     }
@@ -1545,6 +1528,13 @@ function selectSheet(sheetType: SheetType | null) {
 }
 
 function resetView(zoomDeg?: number, withAzOffset=true) {
+
+  updatePathInFoV();
+  if (pathInFoV.value) {
+    setTimeout(() => centerOnMidday(), 100);
+    return;
+  }
+
   const time = store.currentTime;
   const t = time.getTime();
 
@@ -1653,13 +1643,6 @@ watch(selectedLocation, (location: LocationDeg, oldLocation: LocationDeg) => {
   updateWWTLocation(location);
   updateSliderBounds(location, oldLocation);
   resetView();
-  WWTControl.singleton.renderOneFrame();
-  setTimeout(() => {
-    updatePathInFoV();
-    if (pathInFoV.value) {
-      centerOnMidday();
-    }
-  }, PATH_FOV_UPDATE_TIMEOUT);
 });
 
 watch(currentTime, (_time: Date) => {
