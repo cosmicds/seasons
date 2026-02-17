@@ -1108,10 +1108,10 @@ function updatePathInFoV() {
   const endPos = getSunPositionAtTime(new Date(endTime.value));
   const context = WWTControl.singleton.renderContext;
   let azWidth = Math.abs(endPos.azRad - startPos.azRad) * R2D;
-  const widthToFit = 0.075 * 0.9 * context.width + 12;
+  const widthToFit = 47.8 * Math.log(0.9 * context.width) - 245;
   const peakNorth = Math.min(Math.abs(middayAltAz.value.azRad), Math.abs(middayAltAz.value.azRad - 2 * Math.PI)) < Math.abs(middayAltAz.value.azRad - Math.PI);
   if (peakNorth) {
-    azWidth= 360 - azWidth;
+    azWidth = 360 - azWidth;
   }
   pathInFoV.value = (azWidth < widthToFit);
 }
