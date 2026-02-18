@@ -151,6 +151,7 @@
           :tooltip-text="showTextSheet ? 'Hide Info' : 'Learn More'"
           tooltip-location="start"
           size="sm"
+
         >
         </icon-button>
       </div>
@@ -448,8 +449,8 @@
 
     <v-dialog
       :style="cssVars"
-      class="bottom-sheet"
-      id="text-bottom-sheet"
+      :class="['info-sheet', `info-sheet-${infoSheetLocation}`]"
+      id="text-info-sheet"
       hide-overlay
       persistent
       no-click-animation
@@ -458,7 +459,7 @@
       :scrim="false"
       location="bottom"
       v-model="showTextSheet"
-      transition="dialog-bottom-transition"
+     :transition="infoSheetTransition"
     >
       <v-card height="100%">
         <v-tabs
@@ -469,7 +470,7 @@
           id="tabs"
           dense
         >
-          <v-tab class="info-tabs" tabindex="0"><h3>How to Use this App</h3></v-tab>
+          <v-tab class="info-tabs" tabindex="0"><h3>How to Use</h3></v-tab>
           <v-tab class="info-tabs" tabindex="0"><h3>What to Explore</h3></v-tab>
         </v-tabs>
         <font-awesome-icon
@@ -1442,18 +1443,30 @@ const inNorthernHemisphere = computed(() => selectedLocation.value.latitudeDeg >
 const smallSize = computed(() => smAndDown.value);
 const mobile = computed(() => smallSize.value && touchscreen);
 
+const infoFraction = 34;
+const infoSheetLocation = computed(() => smallSize.value ? "bottom" : "left");
+const infoSheetHeight = computed(() => infoSheetLocation.value === "bottom" ? `${infoFraction}%` : "100%");
+const infoSheetWidth = computed(() => infoSheetLocation.value === "bottom" ? "100%" : `${infoFraction}%`);
+const infoTextHeight = computed(() => infoSheetLocation.value === "bottom" ? `calc(${infoFraction}vh - 25px)` : "calc(100vh - 25px)");
+const infoSheetTransition = computed(() => infoSheetLocation.value === "bottom" ? "dialog-bottom-transition" : "slide-x-transition");
+
 /* This lets us inject component data into element CSS */
 const cssVars = computed(() => {
   return {
     "--accent-color": accentColor.value,
-    "--app-content-height": showTextSheet.value ? "66%" : "100%",
+    "--app-content-height": showTextSheet.value && infoSheetLocation.value === "bottom" ? `${100 - infoFraction}vh` : "100dvh",
+    "--app-content-width": showTextSheet.value && infoSheetLocation.value === "left" ? `${100 - infoFraction}vw` : "100dvw",
     "--time-slider-width": `${daylightPercentage.value.toFixed(2)}%`,
     "--time-slider-left": `${(100 * Math.min(1, dayFractionForTimestamp(startTime.value + selectedTimezoneOffset.value))).toFixed(2)}%`,
     "--thumb-label-color": sunAlways.value === "down" ? NIGHTTIME : accentColor.value,
+    "--info-sheet-width": infoSheetWidth.value,
+    "--info-sheet-height": infoSheetHeight.value,
+    "--info-text-height": infoTextHeight.value,
   };
 });
 
 const daylightPercentage = computed(() => 100 * Math.min(1, dayFractionForTimestamp(endTime.value - startTime.value)));
+
 
 
 /**
@@ -1929,11 +1942,12 @@ body {
 
 #main-content {
   position: fixed;
-  width: 100%;
+  right: 0;
+  width: var(--app-content-width);
   height: var(--app-content-height);
   overflow: hidden;
 
-  transition: height 0.1s ease-in-out;
+  transition: all 0.3s ease-in-out;
 }
 
 #app {
@@ -2088,13 +2102,28 @@ video {
   z-index: 10;
 }
 
-.bottom-sheet {
+.info-sheet {
   .v-overlay__content {
     align-self: flex-end;
     padding: 0 !important;
     margin: 0 !important;
     max-width: 100% !important;
-    height: 34%;
+    height: var(--info-sheet-height) !important;
+    width: var(--info-sheet-width) !important;
+  }
+
+  &.info-sheet-left .v-overlay__content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    max-height: 100%;
+    & .v-card, & .v-card .v-window {
+      height: 100%;
+    }
+    
+    & .info-tabs h3 {
+      font-size: 10pt;
+    }
   }
 
   #tabs {
@@ -2103,7 +2132,7 @@ video {
   }
   
   .info-text {
-    height: 33vh;
+    height: var(--info-text-height);
     padding-bottom: 25px;
   
     & a {
@@ -2301,6 +2330,10 @@ video {
     width: 70vw;
     height: 60vh;
   }
+}
+
+.control-icon {
+  pointer-events: auto; 
 }
 
 #bottom-content {
