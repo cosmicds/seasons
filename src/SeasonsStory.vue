@@ -11,6 +11,7 @@
 
     <!-- This contains the splash screen content -->
   <splash-screen
+    ref="splashScreenRef"
     v-if="splashReady"
     title="Seasons"
     :cssVars="cssVars"
@@ -34,7 +35,7 @@
 
     <!-- This block contains the elements (e.g. icon buttons displayed at/near the top of the screen -->
 
-    <div id="top-content">
+    <div id="top-content" :inert="showSplashScreen || undefined">
       <div id="left-buttons">
         <div class="location-display">
           <div
@@ -131,6 +132,8 @@
             label="Auto-track Sun"
             density="compact"
             hide-details
+            @keydown.space.prevent="forceCamera = !forceCamera"
+            @keydown.enter.prevent="forceCamera = !forceCamera"
           />
         </div>
         <!-- go to sun -->
@@ -250,7 +253,7 @@
     
     <!-- This block contains the elements (e.g. the project icons) displayed along the bottom of the screen -->
 
-    <div id="bottom-content">
+    <div id="bottom-content" :inert="showSplashScreen || undefined">
 
       <div id="time-slider-chips">
         <div
@@ -359,32 +362,35 @@
           events.push(`wwt_rate ${rate}`);
         }"
         />
-      <icon-button
+      <div
         v-else
-        id="play-pause"
-        :icon="playing ? 'pause' : 'play'"
-        @activate="() => {
-          playing = !playing;
-          store.setClockRate(playing ? 1000 : 0);
-          store.setClockSync(playing);
-          handlePlaying(playing);
-        }"
-        :tooltip-text="playing ? 'Pause' : 'Play'"
-        tooltip-offset="5px"
-        show-tooltip
-        :color="accentColor"
-        :focus-color="accentColor"
-      ></icon-button>
-      <daylight-pie-chart
-        v-if="smallSize"
-        :rise="startTime"
-        :set="endTime"
-        :always="sunAlways"
-        size="50px"
-        :timezone-offset="selectedTimezoneOffset"
-      />
+        id="small-play-pie-chart"
+      >
+        <icon-button
+          id="play-pause"
+          :icon="playing ? 'pause' : 'play'"
+          @activate="() => {
+            playing = !playing;
+            store.setClockRate(playing ? 1000 : 0);
+            store.setClockSync(playing);
+            handlePlaying(playing);
+          }"
+          :tooltip-text="playing ? 'Pause' : 'Play'"
+          tooltip-offset="5px"
+          show-tooltip
+          :color="accentColor"
+          :focus-color="accentColor"
+        ></icon-button>
+        <daylight-pie-chart
+          :rise="startTime"
+          :set="endTime"
+          :always="sunAlways"
+          size="50px"
+          :timezone-offset="selectedTimezoneOffset"
+        />
+      </div>
     </div>
-    <div id="change-flags">
+    <div id="change-flags" :inert="showSplashScreen || undefined">
       <icon-button
         icon="mdi-comment-quote"
         @activate="showQuestion = true"
@@ -410,7 +416,7 @@
       >
       </icon-button>
     </div>
-    <div id="body-logos" v-if="!smallSize">
+    <div id="body-logos" v-if="!smallSize" :inert="showSplashScreen || undefined">
       <credit-logos
         :default-logos="['cosmicds', 'wwt', 'sciact', 'nasa']"
       />
@@ -828,6 +834,7 @@ const { smAndDown } = useDisplay();
 const splash = new URLSearchParams(window.location.search).get("splash")?.toLowerCase() !== "false";
 const showSplashScreen = ref(splash);
 const splashReady = computed(() => splash && selectedEvent.value !== null);
+const splashScreenRef = ref<HTMLElement | null>(null);
 const backgroundImagesets = reactive<BackgroundImageset[]>([]);
 const sheet = ref<SheetType | null>(null);
 const layersLoaded = ref(false);
@@ -1668,6 +1675,18 @@ watch(selectedCustomDate, (date: Date | null) => {
 });
 
 watch(inNorthernHemisphere, (_inNorth: boolean) => resetNSEWText());
+watch(splashReady, (ready: boolean) => {
+  if (ready) {
+    nextTick(() => {
+      if (splashScreenRef.value) {
+        const firstFocusable = splashScreenRef.value.querySelector<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (firstFocusable) {
+          firstFocusable.focus();
+        }
+      }
+    });
+  }
+});
 
 function updateTabTime(leavingTab: number, timestamp: number) {
   if (leavingTab === 0) {
@@ -2051,13 +2070,17 @@ body {
 }
 
 // From Sara Soueidan (https://www.sarasoueidan.com/blog/focus-indicators/) & Erik Kroes (https://www.erikkroes.nl/blog/the-universal-focus-state/)
-:focus-visible,
-button:focus-visible,
-.focus-visible,
-.v-selection-control--focus-visible .v-selection-control__input {
+// checkbox will only get oreo styling when user tabs by keyboard.
+:focus-visible, .v-checkbox .v-selection-control__input:has(:focus-visible) {
   outline: 9px double white !important;
   box-shadow: 0 0 0 6px black !important;
   border-radius: .125rem;
+}
+
+// Reduce focus indicator for text input fields only (they have their own built-in indicators) and from v-slider thumb when focused via mouse (not keyboard)
+.v-text-field input:focus-visible, .v-slider .v-slider-thumb:focus:not(:focus-visible) {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .video-wrapper {
@@ -2478,6 +2501,17 @@ video {
 #bottom-content #speed-buttons {
   @media (max-width: 699px) {
     gap: 6px !important;
+  }
+}
+
+#small-play-pie-chart {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+
+  #play-pause {
+    height: auto;
+    flex-shrink: 0;
   }
 }
 
