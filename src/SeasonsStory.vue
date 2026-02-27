@@ -422,6 +422,29 @@
       />
     </div>
 
+    <!-- WebGL2 not enabled dialog -->
+    <v-dialog
+      class="error-dialog"
+      :style="cssVars"
+      v-model="showWebGL2Dialog"
+      persistent
+    >
+      <v-card>
+        <div class="error-message">
+          <p>
+            <strong>This app requires WebGL 2</strong>
+          </p>
+          <p class="mt-2">
+            Check your browser's settings and enable WebGL 2 ("graphics acceleration" on some browsers).
+          </p>
+          <p class="mt-2">
+            You can check whether your browser supports WebGL 2
+            and get assistance <a href="https://get.webgl.org/webgl2/" target="_blank" rel="noopener noreferrer">here</a>.
+          </p>
+        </div>
+      </v-card>
+    </v-dialog>
+
 
     <!-- This dialog contains the video that is displayed when the video icon is clicked -->
 
@@ -853,6 +876,7 @@ let whatToExploreStartTimestamp = null as number | null;
 
 const playing = ref(false);
 const showLocationSelector = ref(false);
+const showWebGL2Dialog = ref(false);
 
 const showHorizon = ref(true);
 
@@ -1105,6 +1129,15 @@ const sunAlways = computed<"up" | "down" | null>(() => {
     (polarInfo.sunAlwaysUp ? "up" : (polarInfo.sunAlwaysDown ? "down" : null)) :
     null;
 });
+
+function isWebGL2Enabled(): boolean {
+  // It doesn't seem like there's a better way to do this than just to try and get a context
+  // https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/By_example/Detect_WebGL
+  // NB: The engine specifically wants a webgl2 context
+  const canvas = document.createElement("canvas");
+  const gl = canvas.getContext("webgl2");
+  return gl instanceof WebGL2RenderingContext;
+}
 
 function updatePathInFoV() {
   // If the Sun is always up, no need to do the width check, which is problematic then anyways
@@ -1446,6 +1479,19 @@ function aspectRatioSetup() {
 }
 
 onMounted(() => {
+
+  if (!isWebGL2Enabled()) {
+    closeSplashScreen();
+    showWebGL2Dialog.value = true; 
+    layersLoaded.value = true;
+    positionSet.value = true;
+    // eslint-disable-next-lint @typescript-eslint/ban-ts-comment
+    // @ts-expect-error `canvas` is defined
+    WWTControl.singleton.canvas.setAttribute("hidden", "true");
+    WWTControl.singleton.renderOneFrame = function() {};
+    return;
+  }
+
   updateSelectedLocationInfo();
   store.waitForReady().then(async () => {
     WWTControl.singleton.set_zoomMax(MAX_ZOOM);
@@ -2123,8 +2169,13 @@ body {
   border-radius: .125rem;
 }
 
-// Reduce focus indicator for text input fields only (they have their own built-in indicators) and from v-slider thumb when focused via mouse (not keyboard)
-.v-text-field input:focus-visible, .v-slider .v-slider-thumb:focus:not(:focus-visible) {
+// Reduce focus indicator for text input fields only (they have their own built-in indicators), 
+// from v-slider thumb when focused via mouse (not keyboard),
+// and from WebGL2 error dialog
+.v-text-field input:focus-visible,
+.v-slider .v-slider-thumb:focus:not(:focus-visible),
+.error-dialog .v-overlay__content:focus-visible
+{
   outline: none !important;
   box-shadow: none !important;
 }
@@ -2777,4 +2828,21 @@ svg.fa-xmark {
   }
 }
 
+.error-dialog {
+  width: auto;
+  height: auto;
+  max-width: 425px;
+  border-radius: 10px;
+
+  .v-card {
+    border-radius: 10px !important;
+  }
+}
+
+.error-message {
+  padding: 1rem;
+  border: 1px solid var(--accent-color);
+  text-align: center;
+  border-radius: 10px;
+}
 </style>
