@@ -810,7 +810,8 @@ import { v4 } from "uuid";
 
 import { AstroTime, Seasons } from "astronomy-engine";
 
-import { Color, Grids, Planets, Settings, WWTControl } from "@wwtelescope/engine";
+import { Color, Grids, Planets, Settings, SpreadSheetLayer, WWTControl } from "@wwtelescope/engine";
+import { MarkerScales } from "@wwtelescope/engine-types";
 import { GotoRADecZoomParams, engineStore } from "@wwtelescope/engine-pinia";
 import {
   BackgroundImageset,
@@ -1453,6 +1454,8 @@ const selectedLocaledTimeDateString = computed(() => {
 
 const MAX_ZOOM = 500;
 
+const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
+
 function aspectRatioSetup() {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-expect-error WWTControl does have a canvas element (that's not TS-exposed)
@@ -1520,6 +1523,10 @@ onMounted(() => {
     layersLoaded.value = true;
 
     questionDisplaySetup();
+
+    const layer = await createAnalemmaLayer({ year: 2026, dayFraction: 0.35, daysBetween: 5 });
+    console.log(layer);
+
   });
 
   createUserEntry();
@@ -1675,6 +1682,49 @@ function resetView(zoomDeg?: number, withAzOffset=true) {
     zoomDeg: zoomDeg ?? MAX_ZOOM,
     instant: true,
   });
+}
+
+interface AnalemmaLayerOptions {
+  year: number;
+  dayFraction: number;
+  daysBetween: number;
+}
+
+function createAnalemmaLayer(options: AnalemmaLayerOptions): Promise<SpreadSheetLayer> {
+  const start = new Date(options.year, 0);
+  const delta = options.daysBetween * 24 * 60 * 60 * 1000;
+  const end = (new Date(options.year + 1, 0)).getTime();
+  let time = start.getTime() + options.dayFraction * MILLISECONDS_PER_DAY;
+
+  const points: string[] = [];
+  while (time < end) {
+    const date = new Date(time);
+    const sunPosition = getSunPositionAtTime(date);
+    const raDec = horizontalToEquatorial(
+      sunPosition.altRad,
+      sunPosition.azRad,
+      selectedLocation.value.latitudeDeg * D2R,
+      selectedLocation.value.longitudeDeg * D2R,
+      store.currentTime,
+    );
+    points.push(`${raDec.raRad * R2D}\t${raDec.decRad * R2D}`);
+    time += delta;
+  }
+
+  const dataCsv = `RA\tDec\r\n${points.join('\r\n')}`;
+  return store.createTableLayer({
+    name: "Analemma",
+    referenceFrame: "Sky",
+    dataCsv,
+  }).then(layer => {
+    layer.set_color(Color.fromArgb(255, 255, 255, 0));
+    layer.set_scaleFactor(50);
+    layer.set_lngColumn(0);
+    layer.set_latColumn(1);
+    layer.set_markerScale(MarkerScales.screen);
+    return layer;
+  });
+
 }
 
 function updateWWTLocation(location: LocationDeg) {
