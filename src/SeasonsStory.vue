@@ -810,7 +810,8 @@ import { v4 } from "uuid";
 
 import { AstroTime, Seasons } from "astronomy-engine";
 
-import { Color, Grids, Planets, Settings, WWTControl } from "@wwtelescope/engine";
+import { Color, Grids, Planets, Settings, SpreadSheetLayer, WWTControl } from "@wwtelescope/engine";
+import { RAUnits, MarkerScales } from "@wwtelescope/engine-types";
 import { GotoRADecZoomParams, engineStore } from "@wwtelescope/engine-pinia";
 import {
   BackgroundImageset,
@@ -1453,6 +1454,8 @@ const selectedLocaledTimeDateString = computed(() => {
 
 const MAX_ZOOM = 500;
 
+const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
+
 function aspectRatioSetup() {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-expect-error WWTControl does have a canvas element (that's not TS-exposed)
@@ -1477,6 +1480,8 @@ function aspectRatioSetup() {
   observer.observe(canvas);
   updateAzOffsets();
 }
+
+let analemmaLayer: SpreadSheetLayer | null = null;
 
 onMounted(() => {
 
@@ -1520,6 +1525,7 @@ onMounted(() => {
     layersLoaded.value = true;
 
     questionDisplaySetup();
+
   });
 
   createUserEntry();
@@ -1677,6 +1683,75 @@ function resetView(zoomDeg?: number, withAzOffset=true) {
   });
 }
 
+interface AnalemmaLayerOptions {
+  year: number;
+  dayFraction: number;
+  daysBetween: number;
+}
+
+let analemmaAltAz: [number, number][] = [];
+
+function createAnalemmaAltAz(options: AnalemmaLayerOptions): [number, number][] {
+  const start = new Date(options.year, 0);
+  const delta = options.daysBetween * MILLISECONDS_PER_DAY;
+  const end = (new Date(options.year + 1, 0)).getTime();
+  let time = start.getTime() + options.dayFraction * MILLISECONDS_PER_DAY;
+  const points: [number, number][] = [];
+  while (time < end) {
+    const date = new Date(time);
+    const sunPosition = getSunPositionAtTime(date);
+    points.push([sunPosition.altRad, sunPosition.azRad]);
+    time += delta;
+  }
+  return points;
+}
+
+function createAnalemmaRADec(options: AnalemmaLayerOptions) {
+  if (analemmaAltAz.length === 0) {
+    analemmaAltAz = createAnalemmaAltAz(options);
+  }
+  return analemmaAltAz.map(([altRad, azRad]) => {
+    const raDec = horizontalToEquatorial(
+      altRad,
+      azRad,
+      selectedLocation.value.latitudeDeg * D2R,
+      selectedLocation.value.longitudeDeg * D2R,
+      currentTime.value,
+    );
+    return [raDec.raRad * R2D, raDec.decRad * R2D];
+  });
+}
+
+function createAnalemmaLayer(options: AnalemmaLayerOptions): Promise<SpreadSheetLayer> {
+  const points = createAnalemmaRADec(options);
+  const dataCsv = `RA\tDec\r\n${points.map(pt => pt.join('\t')).join('\r\n')}`;
+  return store.createTableLayer({
+    name: "Analemma",
+    referenceFrame: "Sky",
+    dataCsv,
+  }).then(layer => {
+    layer.set_color(Color.fromArgb(255, 255, 255, 0));
+    layer.set_scaleFactor(50);
+    layer.set_raUnits(RAUnits.degrees);
+    layer.set_lngColumn(0);
+    layer.set_latColumn(1);
+    layer.set_markerScale(MarkerScales.screen);
+    return layer;
+  });
+
+}
+
+async function updateAnalemmaLayer(options: AnalemmaLayerOptions) {
+  if (!analemmaLayer) {
+    analemmaLayer = await createAnalemmaLayer(options);
+  } else {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    const table = analemmaLayer._table$1; analemmaLayer.dirty = true;
+    table.rows = createAnalemmaRADec(options).map(pt => pt.map(t => String(t)));
+  }
+}
+
 function updateWWTLocation(location: LocationDeg) {
   wwtSettings.set_locationLat(location.latitudeDeg);
   wwtSettings.set_locationLng(location.longitudeDeg);
@@ -1725,6 +1800,15 @@ watch(selectedLocation, (location: LocationDeg, oldLocation: LocationDeg) => {
   updateWWTLocation(location);
   updateSliderBounds(location, oldLocation);
   resetView();
+
+  const options: AnalemmaLayerOptions = {
+    year: selectedCustomDate.value?.getFullYear() ?? 2026,
+    dayFraction: 0.5,
+    daysBetween: 5,
+  };
+
+  analemmaAltAz = createAnalemmaAltAz(options);
+  updateAnalemmaLayer(options);
 });
 
 watch(currentTime, (_time: Date) => {
@@ -1737,6 +1821,11 @@ watch(currentTime, (_time: Date) => {
     resetView(store.zoomDeg);
   }
   sunDistance.value = sunPlace.get_distance();
+  updateAnalemmaLayer({
+    year: selectedCustomDate.value?.getYear() ?? 2026,
+    dayFraction: 0.5,
+    daysBetween: 5,
+  });
 });
 
 watch(forceCamera, (value: boolean) => {
@@ -1764,6 +1853,11 @@ watch(selectedCustomDate, (date: Date | null) => {
     userSelectedDates.push(representation);
     events.push(representation);
   }
+  updateAnalemmaLayer({
+    year: selectedCustomDate.value?.getYear() ?? 2026,
+    dayFraction: 0.5,
+    daysBetween: 5,
+  });
 });
 
 watch(inNorthernHemisphere, (_inNorth: boolean) => resetNSEWText());
