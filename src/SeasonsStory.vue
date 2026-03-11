@@ -1481,6 +1481,8 @@ function aspectRatioSetup() {
   updateAzOffsets();
 }
 
+let analemmaLayer: SpreadSheetLayer | null = null;
+
 onMounted(() => {
 
   if (!isWebGL2Enabled()) {
@@ -1523,9 +1525,6 @@ onMounted(() => {
     layersLoaded.value = true;
 
     questionDisplaySetup();
-
-    const layer = await createAnalemmaLayer({ year: 2026, dayFraction: 0.35, daysBetween: 5 });
-    console.log(layer);
 
   });
 
@@ -1692,9 +1691,12 @@ interface AnalemmaLayerOptions {
 
 function createAnalemmaLayer(options: AnalemmaLayerOptions): Promise<SpreadSheetLayer> {
   const start = new Date(options.year, 0);
-  const delta = options.daysBetween * 24 * 60 * 60 * 1000;
+  const delta = options.daysBetween * MILLISECONDS_PER_DAY;
   const end = (new Date(options.year + 1, 0)).getTime();
   let time = start.getTime() + options.dayFraction * MILLISECONDS_PER_DAY;
+  console.log("Start time");
+  console.log(new Date(time));
+  console.log(selectedTimezoneOffset.value);
 
   const points: string[] = [];
   while (time < end) {
@@ -1787,6 +1789,23 @@ watch(currentTime, (_time: Date) => {
     resetView(store.zoomDeg);
   }
   sunDistance.value = sunPlace.get_distance();
+});
+
+watch([selectedLocation, selectedCustomDate], async (values: [LocationDeg, Date | null]) => {
+  if (analemmaLayer) {
+    store.deleteLayer(analemmaLayer);
+  }
+
+  const date = values[1];
+  if (date != null) {
+    analemmaLayer = await createAnalemmaLayer({
+      year: date.getFullYear(),
+      dayFraction: 0.5,
+      daysBetween: 5,
+    });
+  } else {
+    analemmaLayer = null;
+  }
 });
 
 watch(forceCamera, (value: boolean) => {
