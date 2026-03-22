@@ -1870,7 +1870,7 @@ async function questionDisplaySetup() {
   setQuestionTimeout();
 }
 
-function setQuestionTimeout(timeout=4 * 60_000) {
+function setQuestionTimeout(timeout=3 * 60_000) {
   questionTimeout = setTimeout(() => {
     showQuestion.value = true;
   }, timeout);
