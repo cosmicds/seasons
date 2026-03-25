@@ -13,6 +13,7 @@ import {
   DT,
   GlyphCache,
   Grids,
+  LayerManager,
   Matrix3d,
   Planets,
   RenderContext,
@@ -225,6 +226,7 @@ export function renderOneFrame(showHorizon=true,
       }
     }
   }
+
   if (this.uiController != null) {
     this.uiController.render(this.renderContext);
   }
@@ -266,6 +268,9 @@ export function renderOneFrame(showHorizon=true,
   if (showHorizon) {
     drawHorizon(this.renderContext, { opacity: 0.9, color: "#01362C" });
   }
+
+  const referenceFrame = this.getCurrentReferenceFrame();
+  LayerManager._draw(this.renderContext, 1, this.get_space(), referenceFrame, true, this.get_space());
 
   const worldSave = this.renderContext.get_world();
   const viewSave = this.renderContext.get_view();
