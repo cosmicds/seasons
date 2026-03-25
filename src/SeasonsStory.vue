@@ -1692,10 +1692,10 @@ interface AnalemmaLayerOptions {
 let analemmaAltAz: [number, number][] = [];
 
 function createAnalemmaAltAz(options: AnalemmaLayerOptions): [number, number][] {
-  const start = new Date(options.year, 0);
+  const start = new Date(Date.UTC(options.year, 0));
   const delta = options.daysBetween * MILLISECONDS_PER_DAY;
   const end = (new Date(options.year + 1, 0)).getTime();
-  let time = start.getTime() + options.dayFraction * MILLISECONDS_PER_DAY;
+  let time = start.getTime() + options.dayFraction * MILLISECONDS_PER_DAY - getTimezoneOffset(selectedTimezone.value, start);
   const points: [number, number][] = [];
   while (time < end) {
     const date = new Date(time);
