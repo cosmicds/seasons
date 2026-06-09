@@ -371,8 +371,6 @@
           :icon="playing ? 'pause' : 'play'"
           @activate="() => {
             playing = !playing;
-            store.setClockRate(playing ? 1000 : 0);
-            store.setClockSync(playing);
             handlePlaying(playing);
           }"
           :tooltip-text="playing ? 'Pause' : 'Play'"
@@ -1727,9 +1725,9 @@ watch(selectedLocation, (location: LocationDeg, oldLocation: LocationDeg) => {
   resetView();
 });
 
-watch(currentTime, (_time: Date) => {
+watch(currentTime, (time: Date) => {
   // Auto-pause when time reaches sunset or sunrise, accounting for playing direction
-  if (playing.value && ((_time.getTime() >= endTime.value && store.clockRate >= 0) || ( _time.getTime() <= startTime.value && store.clockRate <= 0))) {
+  if (playing.value && ((time.getTime() >= endTime.value && store.clockRate >= 0) || ( time.getTime() <= startTime.value && store.clockRate <= 0))) {
     playing.value = false;
     return;
   }  
@@ -1737,6 +1735,11 @@ watch(currentTime, (_time: Date) => {
     resetView(store.zoomDeg);
   }
   sunDistance.value = sunPlace.get_distance();
+});
+
+watch(playing, (play: boolean) => {
+  store.setClockRate(play ? 1000 : 0);
+  store.setClockSync(play);
 });
 
 watch(forceCamera, (value: boolean) => {
