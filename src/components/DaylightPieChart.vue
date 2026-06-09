@@ -32,13 +32,18 @@ const props = withDefaults(defineProps<Props>(), {
 const riseAngle = computed(() => dayFractionForTimestamp(props.rise + props.timezoneOffset));
 const daylightFraction = computed(() => dayFractionForTimestamp(props.set - props.rise));
 
+// Since noon is at the top, we need to shift everything for half a turn
+function turnsForDayFraction(fraction: number): number {
+  return (fraction + 0.5) % 1;
+}
+
 const halfTransitionTurnSize = 0.02;
 
 const cssVars = computed(() => {
-  const dawnStart = `${(riseAngle.value - halfTransitionTurnSize).toFixed(2)}turn`;
-  const dawnEnd = `${(riseAngle.value + halfTransitionTurnSize).toFixed(2)}turn`;
-  const duskStart = `${(riseAngle.value + daylightFraction.value - halfTransitionTurnSize).toFixed(2)}turn`;
-  const duskEnd = `${(riseAngle.value + daylightFraction.value + halfTransitionTurnSize).toFixed(2)}turn`;
+  const dawnStart = `${turnsForDayFraction(riseAngle.value - halfTransitionTurnSize).toFixed(2)}turn`;
+  const dawnEnd = `${turnsForDayFraction(riseAngle.value + halfTransitionTurnSize).toFixed(2)}turn`;
+  const duskStart = `${turnsForDayFraction(riseAngle.value + daylightFraction.value - halfTransitionTurnSize).toFixed(2)}turn`;
+  const duskEnd = `${turnsForDayFraction(riseAngle.value + daylightFraction.value + halfTransitionTurnSize).toFixed(2)}turn`;
   return {
     "--day-color": props.dayColor,
     "--night-color": props.nightColor,
@@ -48,9 +53,9 @@ const cssVars = computed(() => {
         props.always == "up" ? props.dayColor :
           (props.always == "down" ? props.nightColor :
             `conic-gradient(
-               var(--night-color) ${dawnStart},
-               var(--day-color) ${dawnEnd} ${duskStart},
-               var(--night-color) ${duskEnd}
+               var(--day-color) 0 ${duskStart},
+               var(--night-color) ${duskEnd} ${dawnStart},
+               var(--day-color) ${dawnEnd}
              )
              `),
   };
